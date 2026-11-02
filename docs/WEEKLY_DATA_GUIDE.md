@@ -360,6 +360,9 @@
           "title": "TheStreet",
           "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-oct-30-2026"
         }
+      ],
+      "channels": [
+        "ai-capex-to-tw-semis"
       ]
     },
     {
@@ -457,6 +460,9 @@
           "title": "Yahoo Finance（即時盤勢）",
           "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-october-30-dow-sp-500-nasdaq-amazon-intel-ai-sell-off-191429143.html"
         }
+      ],
+      "channels": [
+        "hormuz-to-oil"
       ]
     },
     {
@@ -568,22 +574,26 @@
     {
       "from": "e3",
       "to": "e5",
-      "label": "能源價格推升通膨"
+      "label": "能源價格推升通膨",
+      "channel": "oil-to-us-inflation"
     },
     {
       "from": "e5",
       "to": "e2",
-      "label": "通膨強化升息預期"
+      "label": "通膨強化升息預期",
+      "channel": "us-inflation-to-fed"
     },
     {
       "from": "e5",
       "to": "e1",
-      "label": "高利率壓縮科技股估值"
+      "label": "高利率壓縮科技股估值",
+      "channel": "us-yield-to-tech"
     },
     {
       "from": "e1",
       "to": "e4",
-      "label": "美科技股大跌拖累台股"
+      "label": "美科技股大跌拖累台股",
+      "channel": "us-equity-to-tw-equity"
     }
   ],
   "storylines": [],

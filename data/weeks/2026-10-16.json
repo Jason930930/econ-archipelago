@@ -275,6 +275,9 @@
           "title": "風傳媒",
           "url": "https://www.storm.mg/lifestyle/11173036"
         }
+      ],
+      "channels": [
+        "tsmc-to-tw-equity"
       ]
     },
     {
@@ -340,7 +343,8 @@
     {
       "from": "e1",
       "to": "e2",
-      "label": "能源價格推升通膨"
+      "label": "能源價格推升通膨",
+      "channel": "oil-to-us-inflation"
     },
     {
       "from": "e2",
@@ -350,7 +354,8 @@
     {
       "from": "e4",
       "to": "e5",
-      "label": "外資賣超牽動新台幣"
+      "label": "外資賣超牽動新台幣",
+      "channel": "foreign-flow-to-twd"
     }
   ],
   "storylines": [
