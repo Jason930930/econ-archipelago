@@ -10,7 +10,8 @@ export function districtsFor(region: RegionId, referenced: Iterable<SectorId>): 
 
 const FILL = 0.92;
 const SPACING = 1.05;
-const MAX_PLOT = 1.6;
+/** 區塊上限隨島嶼半徑放大（經濟體越大，區塊越大），介於 1.4 到 3.0。 */
+const maxPlot = (radius: number) => Math.min(3.0, Math.max(1.4, radius * 0.42));
 
 /** 中心 1 格，之後每圈半徑 = k·plot·1.05，容量以弦長計。回傳 null 表示放不下。 */
 function pack(radius: number, n: number, plot: number): [number, number][] | null {
@@ -33,8 +34,8 @@ function pack(radius: number, n: number, plot: number): [number, number][] | nul
 }
 
 export function districtSlots(radius: number, n: number): { offsets: [number, number][]; plot: number } {
-  if (n <= 0) return { offsets: [], plot: MAX_PLOT };
-  let lo = 0.01, hi = MAX_PLOT;
+  if (n <= 0) return { offsets: [], plot: maxPlot(radius) };
+  let lo = 0.01, hi = maxPlot(radius);
   if (pack(radius, n, hi)) return { offsets: pack(radius, n, hi)!, plot: hi };
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2;

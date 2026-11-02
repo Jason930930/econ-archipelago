@@ -1,121 +1,209 @@
 import * as THREE from 'three';
-import { ENTITIES, type EntityId } from '../world/entities';
-import { primaryIndicator } from '../world/entityIndicators';
-import { lerpVisualParams, type VisualParams } from '../world/visualParams';
+import { districtSlots } from '../world/districts';
+import { project } from '../world/geo';
+import type { WorldParams } from '../world/indicators';
+import { lerpWorldParams } from '../world/indicators';
+import { layoutIslands, type IslandLayout } from '../world/layout';
+import { getRegion, type RegionId } from '../world/regions';
+import type { EntityRecord } from '../world/registry';
+import type { SectorId } from '../world/sectors';
 import { createEffects, type Effects } from './effects';
-import { buildIslands, buildLandmark, buildShipping, type Landmark } from './islands';
-import { createStage, HOME, type ColorMode } from './scene';
+import { WorldGraph, type NodeKind, type WorldNode } from './graph';
+import { buildDistrict, type DistrictNode } from './layers/district';
+import { buildIslandTerrain, ISLAND_TOP_Y } from './layers/islandTerrain';
+import { labelObject } from './layers/labels';
+import { disposeObject, makeNode, tagPath } from './layers/nodeBase';
+import { createStage, type ColorMode, type WorldExtent } from './scene';
 
 export { supportsWebGL } from './support';
 export type { ColorMode } from './scene';
 
+export interface WorldBuildInput {
+  entities: EntityRecord[];
+  districts: Record<RegionId, SectorId[]>;
+  mentions: Record<string, number>;
+}
+
 export interface WorldView {
-  setParams(p: VisualParams): void;
-  tweenTo(p: VisualParams, ms: number): Promise<void>;
-  flyTo(id: EntityId, ms?: number): Promise<void>;
+  build(input: WorldBuildInput): void;
+  setWeekFocus(paths: string[]): void;
+  setParams(p: WorldParams): void;
+  tweenTo(p: WorldParams, ms: number): Promise<void>;
+  flyTo(path: string, ms?: number): Promise<void>;
   resetCamera(ms?: number): Promise<void>;
-  highlight(ids: EntityId[]): void;
+  focusAsiaPacific(ms?: number): Promise<void>;
+  cameraTarget(): [number, number];
+  /** 節點地面位置在螢幕上的座標（供測試與標籤定位）；不在畫面內時回傳 null。 */
+  screenOf(path: string): { x: number; y: number } | null;
+  highlight(paths: string[]): void;
   setColorMode(m: ColorMode): void;
   setLowPower(on: boolean): void;
   setTimeScale(s: number): void;
   setInsets(right: number, bottom: number): void;
-  onPick(cb: (id: EntityId | null) => void): void;
-  onHover(cb: (id: EntityId | null, screen: { x: number; y: number }) => void): void;
-  effects: Effects;
+  onPick(cb: (path: string | null) => void): void;
+  onHover(cb: (path: string | null, screen: { x: number; y: number }) => void): void;
+  readonly graph: WorldGraph;
+  readonly effects: Effects;
   dispose(): void;
 }
 
-export function createWorld(canvas: HTMLCanvasElement): WorldView {
+/** 鏡頭縮放（相對全圖）依節點層級。 */
+export const ZOOM_BY_KIND: Record<NodeKind, number> = { region: 1.6, district: 2.4, entity: 3.2 };
+const ASIA_PACIFIC_ZOOM = 2.2;
+
+export function worldExtent(seaPoints: [number, number][] = []): WorldExtent {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const l of layoutIslands().values()) {
+    minX = Math.min(minX, l.center[0] - l.radius); maxX = Math.max(maxX, l.center[0] + l.radius);
+    minZ = Math.min(minZ, l.center[1] - l.radius); maxZ = Math.max(maxZ, l.center[1] + l.radius);
+  }
+  for (const [x, z] of seaPoints) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+  }
+  return { cx: (minX + maxX) / 2, cz: (minZ + maxZ) / 2, halfW: (maxX - minX) / 2, halfD: (maxZ - minZ) / 2 };
+}
+
+function regionNode(id: RegionId, layout: IslandLayout): WorldNode {
+  const group = new THREE.Group();
+  group.add(buildIslandTerrain(id, layout, id === 'intl'));
+  const label = labelObject(getRegion(id).name, 'island-label');
+  label.position.set(layout.center[0], 0.6, layout.center[1] + layout.radius + 0.6);
+  group.add(label);
+  tagPath(group, id);
+  return makeNode({
+    path: id, kind: 'region', object: group, ringRadius: layout.radius + 0.4, ringY: 0.35,
+    anchor: () => new THREE.Vector3(layout.center[0], ISLAND_TOP_Y + 1.5, layout.center[1]),
+  });
+}
+
+/** 虛擬節點（海域與航道區塊）：沒有地形，只提供落點。 */
+function virtualNode(path: string, kind: NodeKind, at: THREE.Vector3): WorldNode {
+  const group = new THREE.Group();
+  group.position.copy(at);
+  return makeNode({ path, kind, object: group, ringRadius: 0.01, ringY: 0, anchor: () => at.clone().setY(1.2) });
+}
+
+export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, number][] = []): WorldView {
   const overlay = canvas.parentElement ?? document.body;
-  const stage = createStage(canvas, overlay);
+  const stage = createStage(canvas, overlay, worldExtent(seaPoints));
   const { scene, camera } = stage;
+  const graph = new WorldGraph();
+  const root = new THREE.Group();
+  scene.add(root);
 
-  buildIslands(scene);
-  const shipping = buildShipping(scene);
-  const landmarks = new Map<EntityId, Landmark>();
-  const pickables: THREE.Object3D[] = [];
-  for (const def of ENTITIES) {
-    const lm = buildLandmark(def);
-    landmarks.set(def.id, lm);
-    scene.add(lm.group);
-    pickables.push(lm.group);
+  // L0：地區島（固定，不隨資料重建）
+  const layouts = layoutIslands();
+  for (const [id, layout] of layouts) {
+    const n = regionNode(id, layout);
+    graph.add(n);
+    root.add(n.object);
   }
 
-  // 高亮光環
-  const rings = new Map<EntityId, THREE.Mesh>();
-  const ringMat = new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide });
-  for (const [id, lm] of landmarks) {
-    const r = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.3, 40).rotateX(-Math.PI / 2), ringMat);
-    r.position.set(lm.def.position[0], 0.2, lm.def.position[1]);
-    r.visible = false;
-    scene.add(r);
-    rings.set(id, r);
-  }
-
+  let built: WorldBuildInput | null = null;
+  let weekFocus = new Set<string>();
   let colorMode: ColorMode = 'tw';
-  let current: VisualParams | null = null;
-  let focus: EntityId | null = null;
+  let current: WorldParams | null = null;
+  let focus: string | null = null;
+  const highlighted = new Set<string>();
+  const dimmed = new Set<string>();
 
-  function apply(p: VisualParams) {
-    current = p;
-    for (const lm of landmarks.values()) {
-      lm.apply(p, colorMode);
-      const key = primaryIndicator(lm.id);
-      lm.setDim(key !== null && p.status[key] !== undefined);
+  function applyStates() {
+    for (const n of graph.all()) n.setState(highlighted.has(n.path) ? 'highlight' : dimmed.has(n.path) ? 'dim' : 'normal');
+  }
+
+  /** L1：依區塊清單重建部門區塊（實體建築在 L2 加入）。 */
+  function buildDistricts(input: WorldBuildInput) {
+    for (const [id, layout] of layouts) {
+      const sectors = input.districts[id] ?? [];
+      const { offsets, plot } = districtSlots(layout.radius, sectors.length);
+      sectors.forEach((sector, i) => {
+        const path = `${id}/${sector}`;
+        graph.removeSubtree(path);
+        const at: [number, number] = [layout.center[0] + offsets[i]![0], layout.center[1] + offsets[i]![1]];
+        const d: DistrictNode = buildDistrict(path, sector, at, plot);
+        graph.add(d);
+        root.add(d.object);
+      });
     }
-    shipping.setCount(p.tankers);
-    stage.setWeather(p.weather);
-    stage.setHaze(p.cpiHaze);
+    // 海域：沒有島，航道實體各自位於真實經緯度。
+    graph.removeSubtree('seas');
+    const lanes = input.entities.filter((e) => e.region === 'seas' && e.geo);
+    const pts = lanes.map((e) => project(e.geo!.lat, e.geo!.lon));
+    const c = pts.length ? pts.reduce((a, p) => [a[0] + p[0] / pts.length, a[1] + p[1] / pts.length], [0, 0]) : [0, 0];
+    for (const n of [virtualNode('seas', 'region', new THREE.Vector3(c[0], 0, c[1])), virtualNode('seas/shipping-lane', 'district', new THREE.Vector3(c[0], 0, c[1]))]) {
+      graph.add(n);
+      root.add(n.object);
+    }
   }
 
   stage.onFrame((dt, t) => {
-    for (const lm of landmarks.values()) lm.update(dt, t);
-    shipping.update(dt, t);
-    ringMat.opacity = 0.55 + Math.sin(t * 4) * 0.25;
+    for (const n of graph.all()) n.update(dt, t);
   });
 
-  // 拾取與 hover
+  // 拾取：沿父節點往上找第一個標了 path 的物件，因此回傳的是最深一層。
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  function pickAt(clientX: number, clientY: number): EntityId | null {
+  function pickAt(clientX: number, clientY: number): string | null {
     const rect = canvas.getBoundingClientRect();
     ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const hit = raycaster.intersectObjects(pickables, true)[0];
-    return (hit?.object.userData.entityId as EntityId | undefined) ?? null;
+    for (const hit of raycaster.intersectObjects(root.children, true)) {
+      if (!hit.object.visible) continue;
+      for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
+        if (typeof o.userData.path === 'string') return o.userData.path as string;
+      }
+    }
+    return null;
   }
 
-  const pickCbs: ((id: EntityId | null) => void)[] = [];
-  const hoverCbs: ((id: EntityId | null, s: { x: number; y: number }) => void)[] = [];
+  const pickCbs: ((p: string | null) => void)[] = [];
+  const hoverCbs: ((p: string | null, s: { x: number; y: number }) => void)[] = [];
   let down: { x: number; y: number } | null = null;
   const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
   const onUp = (e: PointerEvent) => {
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) {
-      const id = pickAt(e.clientX, e.clientY);
-      for (const cb of pickCbs) cb(id);
+      const p = pickAt(e.clientX, e.clientY);
+      for (const cb of pickCbs) cb(p);
     }
     down = null;
   };
   let hoverPending = false;
-  let lastHover: EntityId | null = null;
+  let lastHover: string | null = null;
   const onMove = (e: PointerEvent) => {
     if (e.pointerType !== 'mouse' || hoverPending) return;
     hoverPending = true;
     requestAnimationFrame(() => {
       hoverPending = false;
-      const id = pickAt(e.clientX, e.clientY);
-      canvas.style.cursor = id ? 'pointer' : '';
-      if (id !== lastHover || id) for (const cb of hoverCbs) cb(id, { x: e.clientX, y: e.clientY });
-      lastHover = id;
+      const p = pickAt(e.clientX, e.clientY);
+      canvas.style.cursor = p ? 'pointer' : '';
+      if (p !== lastHover || p) for (const cb of hoverCbs) cb(p, { x: e.clientX, y: e.clientY });
+      lastHover = p;
     });
   };
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointermove', onMove);
 
-  const effects = createEffects({ stage, landmarks, colorMode: () => colorMode, focus: () => focus });
+  const effects = createEffects({ stage, graph, colorMode: () => colorMode, focus: () => focus });
+
+  function apply(p: WorldParams) {
+    current = p;
+    stage.setWeather(p.weather);
+  }
 
   return {
+    graph,
+    effects,
+    build(input) {
+      built = input;
+      buildDistricts(input);
+      applyStates();
+    },
+    setWeekFocus(paths) {
+      weekFocus = new Set(paths);
+      void weekFocus;
+      if (built) this.build(built);
+    },
     setParams: apply,
     tweenTo(p, ms) {
       const from = current;
@@ -123,19 +211,43 @@ export function createWorld(canvas: HTMLCanvasElement): WorldView {
         apply(p);
         return Promise.resolve();
       }
-      return stage.animate(ms, (k) => apply(lerpVisualParams(from, p, k)));
+      return stage.animate(ms, (k) => apply(lerpWorldParams(from, p, k)));
     },
-    flyTo(id, ms = 1200) {
-      focus = id;
-      const [x, z] = landmarks.get(id)!.def.position;
-      return stage.lookAt(x, z + 0.5, 1.9, ms);
+    flyTo(path, ms = 1200) {
+      const n = graph.nearest(path);
+      if (!n) return Promise.resolve();
+      focus = n.path;
+      const at = n.object.getWorldPosition(new THREE.Vector3());
+      const target = n.kind === 'region' ? n.anchor() : at;
+      return stage.lookAt(target.x, target.z, ZOOM_BY_KIND[n.kind], ms);
     },
     resetCamera(ms = 1200) {
       focus = null;
-      return stage.lookAt(HOME.x, HOME.z, HOME.zoom, ms);
+      return stage.lookAt(stage.home.x, stage.home.z, stage.home.zoom, ms);
     },
-    highlight(ids) {
-      for (const [id, r] of rings) r.visible = ids.includes(id);
+    focusAsiaPacific(ms = 1200) {
+      const tw = layouts.get('tw')!;
+      return stage.lookAt(tw.center[0], tw.center[1], ASIA_PACIFIC_ZOOM, ms);
+    },
+    cameraTarget() {
+      return [stage.controls.target.x, stage.controls.target.z];
+    },
+    screenOf(path) {
+      const n = graph.get(path);
+      if (!n) return null;
+      const v = n.kind === 'region' ? n.anchor().setY(ISLAND_TOP_Y) : n.object.getWorldPosition(new THREE.Vector3()).setY(ISLAND_TOP_Y + 0.15);
+      v.project(camera);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) return null;
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+    },
+    highlight(paths) {
+      highlighted.clear();
+      paths.forEach((p) => {
+        const n = graph.nearest(p);
+        if (n) highlighted.add(n.path);
+      });
+      applyStates();
     },
     setColorMode(m) {
       colorMode = m;
@@ -146,11 +258,11 @@ export function createWorld(canvas: HTMLCanvasElement): WorldView {
     setInsets: stage.setInsets,
     onPick: (cb) => void pickCbs.push(cb),
     onHover: (cb) => void hoverCbs.push(cb),
-    effects,
     dispose() {
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointermove', onMove);
+      for (const n of graph.all()) disposeObject(n.object);
       stage.dispose();
     },
   };

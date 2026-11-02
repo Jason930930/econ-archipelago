@@ -27,7 +27,8 @@ export interface Stage {
   animate(ms: number, fn: (k: number) => void): Promise<void>;
   cancelTweens(): void;
   setWeather(w: Weather): void;
-  setHaze(level: number): void;
+  /** 世界首頁視角（框住全圖）。 */
+  readonly home: { x: number; z: number; zoom: number };
   setLowPower(on: boolean): void;
   readonly lowPower: boolean;
   /** 所有補間時長乘上此倍率（播放 2× 或測試加速用）。 */
@@ -39,10 +40,12 @@ export interface Stage {
   dispose(): void;
 }
 
+/** 正北朝上（方位角 0°），俯角 50°，讓 3:1 的世界地圖左右展開。 */
+const ELEVATION = THREE.MathUtils.degToRad(50);
 const CAMERA_OFFSET = (() => {
-  const elevation = THREE.MathUtils.degToRad(35);
-  const azimuth = THREE.MathUtils.degToRad(45);
-  const d = 60;
+  const elevation = ELEVATION;
+  const azimuth = 0;
+  const d = 140;
   return new THREE.Vector3(
     d * Math.cos(elevation) * Math.sin(azimuth),
     d * Math.sin(elevation),
@@ -50,7 +53,13 @@ const CAMERA_OFFSET = (() => {
   );
 })();
 
-export const HOME = { x: 0, z: 1.5, zoom: 1 };
+/** 世界範圍：中心與半寬、半深（世界單位）。 */
+export interface WorldExtent {
+  cx: number;
+  cz: number;
+  halfW: number;
+  halfD: number;
+}
 
 const WEATHER_TARGETS: Record<Weather, { sun: number; cloud: number; fog: number; rain: number; sky: THREE.Color }> = {
   sunny: { sun: 1, cloud: 0.15, fog: 0, rain: 0, sky: new THREE.Color('#9fd3f0') },
@@ -61,7 +70,8 @@ const WEATHER_TARGETS: Record<Weather, { sun: number; cloud: number; fog: number
 
 const easeInOut = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
-export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): Stage {
+export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement, extent: WorldExtent): Stage {
+  const HOME = { x: extent.cx, z: extent.cz, zoom: 1 };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -75,7 +85,7 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
 
   const scene = new THREE.Scene();
   scene.background = WEATHER_TARGETS.cloudy.sky.clone();
-  scene.fog = new THREE.Fog(scene.background.getHex(), 70, 200);
+  scene.fog = new THREE.Fog(scene.background.getHex(), 180, 420);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
   camera.position.set(HOME.x, 0, HOME.z).add(CAMERA_OFFSET);
@@ -86,8 +96,8 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   controls.screenSpacePanning = false;
   controls.enableDamping = true;
   controls.dampingFactor = 0.12;
-  controls.minZoom = 0.5;
-  controls.maxZoom = 3;
+  controls.minZoom = 0.8;
+  controls.maxZoom = 8;
   controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
   controls.target.set(HOME.x, 0, HOME.z);
@@ -96,17 +106,20 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   const hemi = new THREE.HemisphereLight('#fff6e5', '#3b5d75', 1.1);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight('#fff1d6', 2.2);
-  sun.position.set(-18, 30, 14);
+  sun.position.set(extent.cx - 30, 60, extent.cz + 30);
+  sun.target.position.set(extent.cx, 0, extent.cz);
+  scene.add(sun.target);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 90 });
+  sun.shadow.mapSize.set(4096, 4096);
+  Object.assign(sun.shadow.camera, { left: -75, right: 75, top: 50, bottom: -50, near: 1, far: 200 });
   sun.shadow.bias = -0.0008;
   scene.add(sun);
   const flash = new THREE.AmbientLight('#dfe8ff', 0);
   scene.add(flash);
 
   // 海
-  const seaGeo = new THREE.PlaneGeometry(110, 80, 66, 48);
+  const seaGeo = new THREE.PlaneGeometry(extent.halfW * 2 + 120, extent.halfD * 2 + 100, 90, 54);
+  seaGeo.translate(extent.cx, -extent.cz, 0);
   seaGeo.rotateX(-Math.PI / 2);
   const seaBase = Float32Array.from(seaGeo.attributes.position!.array as Float32Array);
   const sea = new THREE.Mesh(seaGeo, new THREE.MeshStandardMaterial({ color: '#3d86b0', roughness: 0.55, metalness: 0.05, flatShading: true }));
@@ -117,24 +130,25 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   const clouds = new THREE.Group();
   const cloudMat = new THREE.MeshStandardMaterial({ color: '#f4f6f8', transparent: true, opacity: 0, flatShading: true, depthWrite: false });
   const rand = mulberry32(7);
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 16; i++) {
     const c = new THREE.Group();
     for (let j = 0; j < 4; j++) {
       const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5 + rand() * 0.5, 0), cloudMat);
       s.position.set(j * 0.7 - 1, rand() * 0.3, rand() * 0.5);
       c.add(s);
     }
-    c.position.set(-26 + rand() * 52, 11 + rand() * 2, -22 + rand() * 30);
+    c.position.set(extent.cx - extent.halfW + rand() * extent.halfW * 2, 14 + rand() * 3, extent.cz - extent.halfD - 10 + rand() * extent.halfD * 2);
+    c.scale.setScalar(1.6);
     c.userData.speed = 0.25 + rand() * 0.35;
     clouds.add(c);
   }
   scene.add(clouds);
 
   // 雨
-  const RAIN = 1400;
+  const RAIN = 3000;
   const rainPos = new Float32Array(RAIN * 6);
   for (let i = 0; i < RAIN; i++) {
-    const x = -28 + rand() * 56, y = rand() * 14, z = -18 + rand() * 36;
+    const x = extent.cx - extent.halfW + rand() * extent.halfW * 2, y = rand() * 20, z = extent.cz - extent.halfD + rand() * extent.halfD * 2;
     rainPos.set([x, y, z, x + 0.08, y - 0.55, z + 0.08], i * 6);
   }
   const rainGeo = new THREE.BufferGeometry();
@@ -143,17 +157,9 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   const rain = new THREE.LineSegments(rainGeo, rainMat);
   scene.add(rain);
 
-  // CPI 熱浪霧（美國島上方）
-  const haze = new THREE.Mesh(
-    new THREE.CircleGeometry(5.2, 32).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: '#ff9a4d', transparent: true, opacity: 0, depthWrite: false }),
-  );
-  haze.position.set(14.3, 3.2, 0.2);
-  scene.add(haze);
 
   let weather = { sun: 0.75, cloud: 0.7, fog: 0.15, rain: 0 };
   let weatherTarget = WEATHER_TARGETS.cloudy;
-  let hazeTarget = 0;
   let lowPower = false;
   let timeScale = 1;
   let insets = { right: 0, bottom: 0 };
@@ -174,7 +180,7 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
     const bottom = Math.min(insets.bottom, h * 0.6);
     const vw = w - right;
     const vh = h - bottom;
-    const halfVisible = Math.max(13, 23 / (vw / vh));
+    const halfVisible = Math.max(extent.halfD * Math.sin(ELEVATION) + 3, (extent.halfW + 3) / (vw / vh));
     const fullW = w + right;
     const fullH = h + bottom;
     const halfH = (halfVisible * fullH) / vh;
@@ -217,21 +223,21 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
     (scene.background as THREE.Color).lerp(weatherTarget.sky, r);
     const fog = scene.fog as THREE.Fog;
     fog.color.copy(scene.background as THREE.Color);
-    fog.near = 70 - weather.fog * 30;
-    fog.far = 200 - weather.fog * 120;
+    fog.near = 180 - weather.fog * 60;
+    fog.far = 420 - weather.fog * 200;
     sun.intensity = 0.5 + 1.9 * weather.sun;
     hemi.intensity = 0.55 + 0.6 * weather.sun;
     cloudMat.opacity = 0.55 * weather.cloud;
     cloudMat.color.setScalar(0.62 + 0.36 * weather.sun);
     for (const c of clouds.children) {
       c.position.x += dt * (c.userData.speed as number);
-      if (c.position.x > 28) c.position.x = -28;
+      if (c.position.x > extent.cx + extent.halfW + 8) c.position.x = extent.cx - extent.halfW - 8;
     }
     rainMat.opacity = 0.55 * weather.rain;
     rain.visible = weather.rain > 0.02 && !lowPower;
     if (rain.visible) {
-      rain.position.y -= dt * 18;
-      if (rain.position.y < -6) rain.position.y += 6;
+      rain.position.y -= dt * 24;
+      if (rain.position.y < -8) rain.position.y += 8;
     }
     if (weather.rain > 0.5) {
       nextFlash -= dt;
@@ -242,10 +248,6 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
     }
     flash.intensity = Math.max(0, flash.intensity - dt * 9);
 
-    const hazeMat = haze.material as THREE.MeshBasicMaterial;
-    hazeMat.opacity += (hazeTarget * 0.38 - hazeMat.opacity) * r;
-    haze.position.y = 3.2 + Math.sin(t * 0.8) * 0.15;
-    haze.scale.setScalar(1 + Math.sin(t * 0.5) * 0.04);
 
     if (!lowPower) {
       const pos = seaGeo.attributes.position!;
@@ -305,9 +307,7 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
     setWeather(w) {
       weatherTarget = WEATHER_TARGETS[w];
     },
-    setHaze(level) {
-      hazeTarget = level;
-    },
+    home: HOME,
     setLowPower(on) {
       lowPower = on;
       renderer.shadowMap.enabled = !on;
