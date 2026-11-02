@@ -11,3 +11,15 @@ export function makeLabel(text: string, cls: string): HTMLDivElement {
 export function labelObject(text: string, cls: string): CSS2DObject {
   return new CSS2DObject(makeLabel(text, cls));
 }
+
+export type LabelKind = 'region' | 'district' | 'entity' | 'entity-name';
+
+/** 縮放分級：地區永遠顯示；部門名與實體建築 ≥ 1.8；實體名稱 ≥ 3.0。 */
+export function labelVisibility(kind: LabelKind, zoom: number): boolean {
+  switch (kind) {
+    case 'region': return true;
+    case 'district':
+    case 'entity': return zoom >= 1.8;
+    case 'entity-name': return zoom >= 3.0;
+  }
+}

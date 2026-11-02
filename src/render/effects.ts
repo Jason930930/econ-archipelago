@@ -61,7 +61,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
   const ground = (path: string, y = 0): THREE.Vector3 | null => {
     const n = graph.nearest(path);
     if (!n) return null;
-    const { x, z } = n.object.getWorldPosition(new THREE.Vector3());
+    // 地區節點的 group 位於原點，所以一律取 anchor 的水平位置。
+    const { x, z } = n.anchor();
     return new THREE.Vector3(x, y, z);
   };
   const topOf = (path: string): THREE.Vector3 | null => graph.nearest(path)?.anchor() ?? null;

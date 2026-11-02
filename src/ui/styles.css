@@ -48,6 +48,7 @@ a { color: var(--accent); }
 .stage { position: fixed; inset: 0; }
 .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .world-labels { position: absolute; inset: 0; pointer-events: none; }
+.world-legend { position: absolute; left: 16px; bottom: calc(var(--bottombar-h, 0px) + 20px); max-width: min(420px, calc(100vw - 32px)); font: 12px/1.4 var(--font); color: #fff; background: rgba(0, 0, 0, 0.35); padding: 4px 10px; border-radius: 8px; pointer-events: none; }
 .island-label { font: 600 13px/1 var(--font); color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65); white-space: nowrap; }
 .district-label { font: 500 11px/1 var(--font); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); white-space: nowrap; }
 .entity-label { font: 500 10px/1 var(--font); color: #1c2430; background: rgba(255, 255, 255, 0.85); border-radius: 4px; padding: 1px 4px; white-space: nowrap; }

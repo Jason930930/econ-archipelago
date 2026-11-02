@@ -12,10 +12,10 @@ import { createGauge, type Gauge, type GaugeHost } from './gauges';
 import { buildShipping } from './layers/shipping';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
 import { buildDistrict, type DistrictNode } from './layers/district';
-import { buildEntityNode } from './layers/entity';
+import { buildEntityNode, type EntityNode } from './layers/entity';
 import { LANDMARKS } from './landmarks';
 import { buildIslandTerrain, ISLAND_TOP_Y } from './layers/islandTerrain';
-import { labelObject } from './layers/labels';
+import { labelObject, labelVisibility } from './layers/labels';
 import { disposeObject, makeNode, tagPath } from './layers/nodeBase';
 import { createStage, type ColorMode, type WorldExtent } from './scene';
 
@@ -50,6 +50,9 @@ export interface WorldView {
   readonly effects: Effects;
   dispose(): void;
 }
+
+/** 全圖說明（常駐於畫面角落）。 */
+export const LEGEND_TEXT = '島嶼大小約與 GDP 成正比（約略值）；為避免重疊，相鄰島嶼位置略有偏移。';
 
 /** 鏡頭縮放（相對全圖）依節點層級。 */
 export const ZOOM_BY_KIND: Record<NodeKind, number> = { region: 1.6, district: 2.4, entity: 3.2 };
@@ -203,7 +206,30 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     });
   }
 
+  // L5：依縮放顯示部門名、實體建築與實體名；航道名稱永遠顯示。
+  let lodZoom = -1;
+  function applyLod(force = false) {
+    const z = camera.zoom;
+    if (!force && Math.abs(z - lodZoom) < 1e-3) return;
+    lodZoom = z;
+    for (const n of graph.all()) {
+      if (n.kind === 'district' && !n.path.startsWith('seas')) (n as DistrictNode).label.visible = labelVisibility('district', z);
+      if (n.kind === 'entity') {
+        const lane = n.path.startsWith('seas/');
+        const e = n as EntityNode;
+        e.object.visible = lane || labelVisibility('entity', z);
+        e.label.visible = lane || labelVisibility('entity-name', z);
+      }
+    }
+  }
+
+  const legend = document.createElement('div');
+  legend.className = 'world-legend';
+  legend.textContent = LEGEND_TEXT;
+  overlay.append(legend);
+
   stage.onFrame((dt, t) => {
+    applyLod();
     for (const n of graph.all()) n.update(dt, t);
     for (const { gauge } of gauges.values()) gauge.update(dt, t);
     shipping.update(dt, t);
@@ -217,7 +243,9 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     for (const hit of raycaster.intersectObjects(root.children, true)) {
-      if (!hit.object.visible) continue;
+      let shown = true;
+      for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) if (!o.visible) shown = false;
+      if (!shown) continue;
       for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
         if (typeof o.userData.path === 'string') return o.userData.path as string;
       }
@@ -276,6 +304,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       attachGauges();
       rebuildShipping();
       applyStates();
+      applyLod(true);
     },
     setWeekFocus(paths) {
       weekFocus = new Set(paths);
@@ -289,6 +318,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       if (changed) {
         attachGauges();
         applyStates();
+        applyLod(true);
       }
     },
     setParams: apply,
@@ -350,6 +380,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointermove', onMove);
       for (const n of graph.all()) disposeObject(n.object);
+      legend.remove();
       stage.dispose();
     },
   };
