@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { validateFredFile } from '../src/data/fredFile';
+import { fredFileWarnings, validateFredFile, type FredFile } from '../src/data/fredFile';
 import { join } from 'node:path';
 import { validateArchive, type ValidationError } from '../src/data/validate';
 import { checkNewEntities, type EntityRecord } from '../src/world/registry';
@@ -41,7 +41,10 @@ const FRED = process.env.FRED_FILE ?? 'data/state/fred.json';
 const fredErrors: ValidationError[] = [];
 if (existsSync(FRED)) {
   try {
-    for (const m of validateFredFile(JSON.parse(readFileSync(FRED, 'utf8')))) fredErrors.push({ file: 'fred.json', path: '/', message: m });
+    const raw = JSON.parse(readFileSync(FRED, 'utf8')) as unknown;
+    const errs = validateFredFile(raw);
+    for (const m of errs) fredErrors.push({ file: 'fred.json', path: '/', message: m });
+    if (errs.length === 0) for (const w of fredFileWarnings(raw as FredFile)) console.warn(`⚠ ${w}`);
   } catch (e) {
     fredErrors.push({ file: 'fred.json', path: '/', message: `JSON 解析失敗：${(e as Error).message}` });
   }

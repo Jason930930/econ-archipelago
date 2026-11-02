@@ -46,6 +46,21 @@ describe('fetchAll', () => {
     expect(urls.every((u) => u.includes(`cosd=${startDate(now)}`))).toBe(true);
     expect(startDate(now)).toBe('2020-11-03');
   });
+  test('history reaches six years before the oldest archived week', async () => {
+    expect(startDate(now, '2019-03-01')).toBe('2013-03-01');
+    expect(startDate(now, '2026-10-16')).toBe('2020-10-16');
+    expect(startDate(now, '2027-01-01')).toBe('2020-11-03');
+    const urls: string[] = [];
+    await fetchAll({ fetchText: async (u) => { urls.push(u); return csvFor(new URL(u).searchParams.get('id')!); }, previous: null, now, earliestWeek: '2019-03-01' });
+    expect(urls.every((u) => u.includes('cosd=2013-03-01'))).toBe(true);
+  });
+  test('unchanged data keeps the previous fetchedAt so nothing is committed', async () => {
+    const fetchText = async (u: string) => csvFor(new URL(u).searchParams.get('id')!);
+    const first = (await fetchAll({ fetchText, previous: null, now })).file!;
+    const second = (await fetchAll({ fetchText, previous: first, now: new Date('2026-11-04T22:17:00Z') })).file!;
+    expect(second).toEqual(first);
+    expect(formatFredFile(second)).toBe(formatFredFile(first));
+  });
   test('all good: every series present with latest observation', async () => {
     const { file, warnings } = await fetchAll({ fetchText: async (u) => csvFor(new URL(u).searchParams.get('id')!), previous: null, now });
     expect(warnings).toEqual([]);

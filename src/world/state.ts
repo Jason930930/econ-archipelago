@@ -45,7 +45,8 @@ export const HIGH_PCT = 80;
 export const LOW_PCT = 20;
 const WINDOW_DAYS = Math.round(365.25 * 5);
 const MIN_POINTS = { daily: 26, monthly: 24 } as const;
-const FRESH_DAYS = { daily: 14, monthly: 75 } as const;
+/** 月資料標在當月 1 日，下一筆通常在 M+2 月中旬才發布（例：歐元區 HICP 約 17–19 日），所以給 100 天。 */
+const FRESH_DAYS = { daily: 14, monthly: 100 } as const;
 const DAILY_LOOKBACK = 28;
 const DAILY_LOOKBACK_MAX = 42;
 const MONTHLY_LOOKBACK = 3;
@@ -222,7 +223,10 @@ export function computeState(weeks: WeekData[], fred: FredFile | null): StateInd
   const latest = lastI >= 0 ? statesAt(ref, fred, asc, resolved, qual, lastI) : {};
   const series: Record<string, Point[]> = {};
   if (fred && latestRef) {
-    const from = addDays(latestRef, -SERIES_DAYS);
+    // 走勢圖要能涵蓋最舊的一週：取「最新 − 2 年」與「最舊週 − 1 年」較早者。
+    const oldest = asc[0]?.weekId;
+    const recent = addDays(latestRef, -SERIES_DAYS);
+    const from = oldest && addDays(oldest, -366) < recent ? addDays(oldest, -366) : recent;
     for (const n of CHANNEL_NODES) {
       const src = NODE_SOURCES[n.id]!;
       const s = src.kind === 'fred' ? fred.series[src.series] : undefined;

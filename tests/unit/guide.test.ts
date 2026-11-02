@@ -36,3 +36,8 @@ test.each(Object.keys(NODE_SOURCES).filter(isQualitative))('guide lists qualitat
 test('guide covers nodeStates', () => {
   for (const s of ['nodeStates', '不要手動沿用', 'FRED', '`level`', '`direction`', '`basis`']) expect(guide, s).toContain(s);
 });
+
+test('guide pulls before pushing to main (FRED bot also pushes daily)', () => {
+  expect(guide).toContain('git pull --rebase origin main && git push origin main');
+  expect(guide).toContain('推送被拒');
+});

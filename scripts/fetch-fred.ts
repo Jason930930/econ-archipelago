@@ -3,7 +3,7 @@
  * 只保留每週五的樣本與最新值，寫入 data/state/fred.json。
  * 單一序列失敗時沿用舊檔中的該序列；全部失敗時不寫檔並以代碼 1 結束。
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkSeries, type FredFile, type FredSeries, type Point } from '../src/data/fredFile';
@@ -51,20 +51,23 @@ export function formatFredFile(f: FredFile): string {
   return `{\n  "fetchedAt": ${JSON.stringify(f.fetchedAt)},\n  "series": {\n${rows.join(',\n')}\n  }\n}\n`;
 }
 
-export function startDate(now: Date): string {
-  const d = new Date(now);
-  d.setUTCFullYear(d.getUTCFullYear() - YEARS);
-  return iso(d);
+/** 下載起點：今天與最舊週檔中較早者，再往前 6 年（5 年百分位視窗＋1 年 YoY），讓舊週的狀態不會隨時間漂移。 */
+export function startDate(now: Date, earliestWeek?: string): string {
+  const today = iso(now);
+  const base = earliestWeek && earliestWeek < today ? earliestWeek : today;
+  return `${Number(base.slice(0, 4)) - YEARS}${base.slice(4)}`;
 }
 
-export function fredCsvUrl(id: string, now: Date): string {
-  return `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(id)}&cosd=${startDate(now)}`;
+export function fredCsvUrl(id: string, now: Date, earliestWeek?: string): string {
+  return `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(id)}&cosd=${startDate(now, earliestWeek)}`;
 }
 
 export async function fetchAll(opts: {
   fetchText(url: string): Promise<string>;
   previous: FredFile | null;
   now: Date;
+  /** 檔案庫中最舊的週（weekId）。 */
+  earliestWeek?: string;
 }): Promise<{ file: FredFile | null; warnings: string[] }> {
   const series: Record<string, FredSeries> = {};
   const warnings: string[] = [];
@@ -74,7 +77,7 @@ export async function fetchAll(opts: {
     let next: FredSeries | null = null;
     let problem = '';
     try {
-      const pts = parseFredCsv(await opts.fetchText(fredCsvUrl(id, opts.now)));
+      const pts = parseFredCsv(await opts.fetchText(fredCsvUrl(id, opts.now, opts.earliestWeek)));
       if (pts.length === 0) problem = '沒有任何觀測值';
       else {
         next = { cadence, latest: pts.at(-1)!, samples: weeklySamples(pts, cadence) };
@@ -95,6 +98,11 @@ export async function fetchAll(opts: {
     }
   }
   if (fetched === 0) return { file: null, warnings };
+  // 資料完全沒變時沿用舊檔（含 fetchedAt），工作流程就不會提交、也不會部署。
+  const prev = opts.previous;
+  if (prev && Object.keys(prev.series).length === Object.keys(series).length && Object.entries(series).every(([id, s]) => JSON.stringify(prev.series[id]) === JSON.stringify(s))) {
+    return { file: prev, warnings };
+  }
   return { file: { fetchedAt: opts.now.toISOString(), series }, warnings };
 }
 
@@ -115,7 +123,8 @@ async function fetchText(url: string): Promise<string> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const previous = existsSync(OUT) ? (JSON.parse(readFileSync(OUT, 'utf8')) as FredFile) : null;
-  const { file, warnings } = await fetchAll({ fetchText, previous, now: new Date() });
+  const earliestWeek = readdirSync('data/weeks').filter((n) => /^\d{4}-\d{2}-\d{2}\.json$/.test(n)).sort()[0]?.slice(0, 10);
+  const { file, warnings } = await fetchAll({ fetchText, previous, now: new Date(), earliestWeek });
   for (const w of warnings) console.warn(`⚠ ${w}`);
   if (!file) {
     console.error('✗ 所有 FRED 序列都抓取失敗，不更新檔案');

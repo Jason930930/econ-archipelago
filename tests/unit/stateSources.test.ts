@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { checkSeries, validateFredFile, type FredFile } from '../../src/data/fredFile';
+import { checkSeries, fredFileWarnings, validateFredFile, type FredFile } from '../../src/data/fredFile';
 import { CHANNEL_NODES } from '../../src/world/channels';
 import { FRED_SERIES, fredUrl, isQualitative, NODE_SOURCES, sourceOf } from '../../src/world/stateSources';
 
@@ -51,9 +51,11 @@ describe('FRED file', () => {
   test('empty series', () => {
     expect(checkSeries('DGS10', { cadence: 'daily', latest: ['2026-10-29', 4.9], samples: [] }).length).toBeGreaterThan(0);
   });
-  test('missing series reported', () => {
+  test('missing series is a warning, not an error (a new series must not block the build)', () => {
     const f = fixture(); delete f.series.VIXCLS;
-    expect(validateFredFile(f).some((m) => m.includes('VIXCLS'))).toBe(true);
+    expect(validateFredFile(f)).toEqual([]);
+    expect(fredFileWarnings(f).some((m) => m.includes('VIXCLS'))).toBe(true);
+    expect(fredFileWarnings(fixture())).toEqual([]);
   });
   test('schema shape enforced', () => {
     expect(validateFredFile({ fetchedAt: 'x' }).length).toBeGreaterThan(0);

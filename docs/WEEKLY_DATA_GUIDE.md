@@ -11,7 +11,8 @@
 3. 依本說明書新增 `data/weeks/<本週五日期 YYYY-MM-DD>.json`。**只新增這一個檔案，不改其他檔案**（新實體也寫在這個檔案的 `newEntities` 裡）。
 4. 執行 `npm run validate`。
    - 通過（印出 `✓ N 週資料驗證通過`）：
-     `git add data/weeks/<日期>.json && git commit -m "data: week <日期>" && git push origin main`
+     `git add data/weeks/<日期>.json && git commit -m "data: week <日期>" && git pull --rebase origin main && git push origin main`
+     （main 每天也會有 FRED 自動更新的提交，所以推送前一定要先 pull。推送被拒時，重跑 `git pull --rebase origin main && git push origin main` 一次；仍失敗就照下面的失敗流程推到分支。）
    - 失敗：依錯誤訊息（格式為 `檔名 JSON路徑: 原因`）修正後重跑，**最多重試 2 次**。仍失敗時：
      `git checkout -b data/week-<日期> && git add data/weeks/<日期>.json && git commit -m "data: week <日期> (validation failed)" && git push origin data/week-<日期>`
      **不要推到 main。**

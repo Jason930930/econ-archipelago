@@ -81,6 +81,11 @@ describe('numericState', () => {
     expect(numericState('us.long-yield', DGS10, rising, addDays(ref, 15)).freshness).toBe('stale');
     expect(numericState('us.long-yield', DGS10, rising, addDays(ref, 14)).freshness).toBe('fresh');
   });
+  test('monthly series up to 100 days old is fresh (HICP lands mid-month M+2)', () => {
+    const idx = monthly(2023, 1, Array.from({ length: 45 }, (_, i) => 100 + i)); // 最後一點 2026-09-01
+    expect(numericState('us.inflation', CPI, series(idx, 'monthly'), '2026-12-05').freshness).toBe('fresh'); // 95 天
+    expect(numericState('us.inflation', CPI, series(idx, 'monthly'), '2026-12-11').freshness).toBe('stale'); // 101 天
+  });
   test('uses the last point on or before the reference date', () => {
     const s = numericState('us.long-yield', DGS10, rising, addDays(ref, -10));
     expect(s.asOf).toBe(addDays(ref, -14));
@@ -149,6 +154,11 @@ describe('computeState', () => {
     expect(st.latest['us.long-yield']!.freshness).toBe('unknown');
     expect(st.latestRef).toBeNull();
     expect(st.series).toEqual({});
+  });
+  test('series reaches back a year before the oldest week', () => {
+    const real = JSON.parse(readFileSync('data/state/fred.json', 'utf8')) as FredFile;
+    const st = computeState([makeWeek('2023-01-06'), ...weeks], real);
+    expect(st.series['us.long-yield']![0]![0] <= '2022-01-14').toBe(true);
   });
   test('series keeps only the last two years, in raw orientation', () => {
     const real = JSON.parse(readFileSync('data/state/fred.json', 'utf8')) as FredFile;

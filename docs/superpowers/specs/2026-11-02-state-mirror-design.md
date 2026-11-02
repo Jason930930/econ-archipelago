@@ -89,7 +89,7 @@ type NodeSource =
 - **YoY 轉換**（月資料）：`v[t] / v[t−12 個月] − 1`（百分比，取兩位小數）；缺 12 個月前的點就跳過該月。
 - **水準**：以 `ref` 往前 5 年內的點（含當點）計算百分位（≤ 當值的比例 × 100，取整數）。點數不足 26（週）或 24（月）時，`level`、`percentile` 為 null（顯示「無歷史基準」）。≥ 80 → 高、≤ 20 → 低、其餘中。反向序列用 `100 − 百分位`。
 - **方向**：比較當值與回看點（日資料：`asOf` 往前 28 天內最接近 28 天前的點；月資料：3 個月前）。門檻 = 0.5 × 過去 5 年同間隔變化量的標準差；|變化| > 門檻才算 ↑／↓，否則 →。標準差為 0 時，任何非零變化都算。反向序列方向取反。回看點不存在 → `direction: null`。
-- **新鮮度（FRED）**：`ref − asOf` ≤ 14 天（日資料）或 ≤ 75 天（月資料）為 fresh，否則 stale。
+- **新鮮度（FRED）**：`ref − asOf` ≤ 14 天（日資料）或 ≤ 100 天（月資料；月資料標在當月 1 日，下一筆常在 M+2 月中旬才發布）為 fresh，否則 stale。
 - **週報指標（金價、台股）**：值取該週已補值的指標（`resolveIndicators`）；`asOf` = 指標實際來源週的週五；`freshness`：fresh／沿用上週 = stale／無 = unknown。水準以檔案庫中的週值計算，週數 < 26 時為 null。方向：與 4 週內最早的週值比較，變化幅度 ≥ 1% 才算 ↑／↓。
 
 ### 2.3 定性節點的計算
@@ -107,7 +107,7 @@ state: {
   byWeek: Record<weekId, Record<nodeId, NodeState>>;
   latest: Record<nodeId, NodeState>;      // FRED 用 fetchedAt；其他節點同最新一週
   latestRef: string | null;               // fetchedAt 日期
-  series: Record<nodeId, [string, number][]>; // 數值節點：最近 2 年的週樣本（已轉換，原始方向），供走勢圖
+  series: Record<nodeId, [string, number][]>; // 數值節點：從「最新 − 2 年」與「最舊週 − 1 年」較早者起的樣本（已轉換，原始方向），供走勢圖
 }
 ```
 
@@ -117,7 +117,8 @@ state: {
 
 ### 3.1 抓取腳本（`scripts/fetch-fred.ts`）
 
-- 對來源表中每個 FRED 序列下載 `https://fred.stlouisfed.org/graph/fredgraph.csv?id=<ID>&cosd=<6 年前>`（不需金鑰）。
+- 對來源表中每個 FRED 序列下載 `https://fred.stlouisfed.org/graph/fredgraph.csv?id=<ID>&cosd=<起點>`（不需金鑰）；起點 = 今天與最舊週檔中較早者再往前 6 年，讓舊週的 5 年視窗不會隨時間縮短。
+- 所有序列都和舊檔相同時沿用舊檔（含 `fetchedAt`），工作流程就不會提交。
 - 解析 CSV，略過值為 `.` 的列；日資料每週只保留「該週五當天或之前的最後一個觀測值」（記錄觀測日），月資料保留全部月點；另記錄最新觀測值 `latest`。
 - 寫入 `data/state/fred.json`：
 
@@ -133,12 +134,13 @@ state: {
 
 ### 3.2 檔案驗證
 
-- `schema/fred.schema.json` 定義上述格式；`npm run validate` 會在 `data/state/fred.json` 存在時一併驗證（schema + 檢查第 3.1 節的規則 + 每個來源表的 FRED 序列都存在）。檔案不存在時只印出提醒，不算錯誤。
+- `schema/fred.schema.json` 定義上述格式；`npm run validate` 會在 `data/state/fred.json` 存在時一併驗證（schema + 檢查第 3.1 節的規則）。來源表需要但檔案裡沒有的序列只印出提醒（相關節點顯示「未知」），不擋建置，以免新增序列或某序列首次抓取失敗時卡住整個每日更新。檔案不存在時也只印出提醒。
 
 ### 3.3 每日工作流程（`.github/workflows/fred.yml`）
 
 - 觸發：`schedule: '17 22 * * *'`（台北 06:17）與 `workflow_dispatch`。
 - 權限：`contents: write`、`actions: write`。
+- 週六排程推送前一定先 `git pull --rebase origin main`（說明書第 1 節）。
 - 步驟：checkout main → `npm ci` → `npx tsx scripts/fetch-fred.ts` → `npm run validate` → `npm test` → 檔案有變動才提交（`data: FRED <日期>`，作者 github-actions[bot]）→ `git pull --rebase` 後推送，最多重試 3 次 → 推送成功後 `gh workflow run deploy.yml --ref main`（以 GITHUB_TOKEN 推送的提交不會觸發其他工作流程，workflow_dispatch 例外）。
 - 沒有變動就不提交、不部署。
 - 與週六排程共用 main：兩者修改不同檔案（`data/state/` 與 `data/weeks/`），rebase 不會衝突。

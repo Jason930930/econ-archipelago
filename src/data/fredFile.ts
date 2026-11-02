@@ -43,15 +43,16 @@ export function checkSeries(id: string, s: FredSeries): string[] {
   return out;
 }
 
-/** 檔案層級驗證：schema、每個序列的合理性、來源表需要的序列都存在。 */
+/** 檔案層級驗證：schema 與每個既有序列的合理性。缺少的序列不算錯（網站顯示「未知」），見 fredFileWarnings。 */
 export function validateFredFile(raw: unknown): string[] {
   if (!checkSchema(raw)) return (checkSchema.errors ?? []).map((e) => `fred.json ${e.instancePath || '/'}: ${e.message ?? '格式錯誤'}`);
   const f = raw as unknown as FredFile;
   const out: string[] = [];
-  for (const id of FRED_SERIES) {
-    const s = f.series[id];
-    if (!s) out.push(`缺少序列 ${id}`);
-    else out.push(...checkSeries(id, s));
-  }
+  for (const [id, s] of Object.entries(f.series)) if (fredSeriesSource(id)) out.push(...checkSeries(id, s));
   return out;
+}
+
+/** 來源表需要、但檔案裡還沒有的序列（例如剛新增的序列第一次抓取失敗）：只提醒，不擋建置。 */
+export function fredFileWarnings(f: FredFile): string[] {
+  return FRED_SERIES.filter((id) => !f.series[id]).map((id) => `fred.json 缺少序列 ${id}（相關節點會顯示「未知」）`);
 }
