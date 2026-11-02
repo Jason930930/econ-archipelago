@@ -14,6 +14,12 @@ export interface ChannelActivity {
   streak: number;
 }
 
+/** 亮管：本週有被引用，或熱度仍在 0.5 以上。 */
+export const LIT_HEAT = 0.5;
+export function isLit(a: ChannelActivity | undefined): boolean {
+  return !!a && (a.intensity > 0 || a.heat >= LIT_HEAT);
+}
+
 export interface ProposalSummary {
   id: string;
   fromPath: string;

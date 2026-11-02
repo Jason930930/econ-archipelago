@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import type { ChannelActivity, ProposalSummary } from '../../world/activation';
+import { isLit, type ChannelActivity, type ProposalSummary } from '../../world/activation';
 import { CHANNELS, FAMILY_INFO, getChannelNode, type Channel } from '../../world/channels';
 import { laneIndexesByPath, routeControls, sameRegion } from '../channelRoute';
 import type { WorldGraph } from '../graph';
@@ -13,7 +13,6 @@ const DARK_OPACITY = 0.12;
 const DARK_RADIUS = 0.06;
 const DOTS = 6;
 
-export const isBright = (a: ChannelActivity | undefined) => !!a && (a.intensity > 0 || a.heat >= 0.5);
 export const brightOpacity = (heat: number) => 0.35 + 0.5 * Math.min(1, heat / 3);
 export const brightRadius = (heat: number) => 0.08 + 0.06 * Math.min(heat, 3);
 
@@ -131,7 +130,7 @@ export function createChannelLayer(graph: WorldGraph, opts: { lowPower(): boolea
   function restyle() {
     for (const p of pipes.values()) {
       const a = activity[p.channel.id];
-      const lit = network || isBright(a) || flashing.has(p.channel.id);
+      const lit = network || isLit(a) || flashing.has(p.channel.id);
       // 網絡模式下沒有熱度的管道，以熱度 1 的亮管樣式呈現；播放加亮時以最高熱度呈現。
       const heat = flashing.has(p.channel.id) ? 3 : Math.max(a?.heat ?? 0, network ? 1 : 0);
       const mat = p.tube.material as THREE.MeshBasicMaterial;
@@ -146,7 +145,7 @@ export function createChannelLayer(graph: WorldGraph, opts: { lowPower(): boolea
       }
       // 一般模式只有亮管可以點，避免暗管搶走區塊的點擊。
       p.tube.userData.pickable = lit;
-      p.dots.visible = lit && (isBright(a) || flashing.has(p.channel.id));
+      p.dots.visible = lit && (isLit(a) || flashing.has(p.channel.id));
       if (p.neg) p.neg.visible = lit;
       p.label.visible = network && opts.zoom() >= CHANNEL_LABEL_ZOOM;
     }

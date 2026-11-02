@@ -7,7 +7,9 @@ import { project } from '../world/geo';
 import { computeWorldParams } from '../world/indicators';
 import { createControls, type ControlsView } from './controls';
 import { el } from './dom';
+import { renderActiveChannels, renderChannelPanel, renderProposalList, renderProposalPanel } from './channelPanel';
 import { renderEventCard } from './eventCard';
+import { FAMILY_INFO, getChannel, getChannelNode } from '../world/channels';
 import { hoverInfo } from './hover';
 import { renderNodePanel } from './nodePanel';
 import { parseHash, toHash } from './route';
@@ -17,6 +19,7 @@ import { renderTimeline } from './timeline';
 const DISCLAIMER = '僅為資訊整理，不構成任何買賣或個人化投資建議。';
 const COLOR_KEY = 'econ-archipelago:colorMode';
 const TEXT_KEY = 'econ-archipelago:textMode';
+const NETWORK_KEY = 'econ-archipelago:network';
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -71,6 +74,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const webgl = supportsWebGL();
   let textMode = !webgl || readPref(TEXT_KEY) === '1';
   let colorMode: ColorMode = readPref(COLOR_KEY) === 'intl' ? 'intl' : 'tw';
+  let networkMode = readPref(NETWORK_KEY) === '1';
   let week!: WeekData;
   let steps: Step[] = [];
   let player: PlayerState = initialPlayer([]);
@@ -84,17 +88,25 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const weekTitle = el('p', { class: 'week-title' });
   const textBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'text-mode' }, '文字模式');
   const colorBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'color-mode' });
+  const networkBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'network', title: '顯示所有常駐傳導管道' }, '傳導網絡');
   if (!webgl) {
     textBtn.disabled = true;
     textBtn.title = '此瀏覽器不支援 WebGL，只能使用文字模式';
   }
   const topbar = el('header', { class: 'topbar' },
     el('div', { class: 'brand' }, el('h1', {}, '經濟群島'), weekTitle, el('p', { class: 'disclaimer' }, DISCLAIMER)),
-    el('div', { class: 'tools' }, textBtn, colorBtn),
+    el('div', { class: 'tools' }, networkBtn, textBtn, colorBtn),
   );
   const stage = el('div', { class: 'stage' });
   const canvas = el('canvas', { 'aria-label': '經濟群島 3D 世界' });
-  stage.append(canvas);
+  const proposalBtn = el('button', { type: 'button', class: 'proposal-count' });
+  const channelLegend = el('div', { class: 'channel-legend', hidden: '' },
+    el('div', { class: 'legend-title' }, '傳導網絡'),
+    el('ul', {}, ...Object.values(FAMILY_INFO).map((f) => el('li', {}, el('span', { class: 'family-dot', style: `background:${f.color}`, 'aria-hidden': 'true' }), f.name))),
+    el('p', { class: 'legend-note' }, '亮：本週點亮或仍有餘溫；「−」：反向；灰色虛線：待審提議'),
+    proposalBtn,
+  );
+  stage.append(canvas, channelLegend);
   const panelBody = el('div', { class: 'panel-body' });
   const handle = el('button', { type: 'button', class: 'sheet-handle', 'aria-label': '展開或收合面板' });
   const closeBtn = el('button', { type: 'button', class: 'panel-close', 'aria-label': '關閉面板' }, '×');
@@ -152,6 +164,19 @@ export async function startApp(root: HTMLElement): Promise<void> {
   panel.addEventListener('select-event', (e) => {
     void selectEvent((e as CustomEvent<{ eventId: string }>).detail.eventId);
   });
+  panel.addEventListener('select-channel', (e) => {
+    selectChannel((e as CustomEvent<{ id: string }>).detail.id);
+  });
+  panel.addEventListener('select-proposal', (e) => {
+    selectProposal((e as CustomEvent<{ id: string }>).detail.id);
+  });
+  panel.addEventListener('select-week', (e) => {
+    void goWeek((e as CustomEvent<{ weekId: string }>).detail.weekId, null);
+  });
+  proposalBtn.addEventListener('click', () => {
+    pause();
+    showPanel(renderProposalList(index));
+  });
 
   // ---------- 面板內容 ----------
   const eventById = (id: string) => week.events.find((e) => e.id === id);
@@ -170,6 +195,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       el('h3', {}, `${week.events.length} 件大事（依因果順序）`),
       el('p', { class: 'muted' }, '按 ▶ 播放，世界會依因果順序演出每則事件；也可以點擊地標或下方的主線探索。'),
       list,
+      renderActiveChannels(week.weekId, index),
     );
   }
 
@@ -205,6 +231,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     document.title = `經濟群島｜${week.title}`;
     textBtn.setAttribute('aria-pressed', String(textMode));
     colorBtn.textContent = colorMode === 'tw' ? '紅漲綠跌' : '綠漲紅跌';
+    networkBtn.setAttribute('aria-pressed', String(networkMode));
+    networkBtn.hidden = textMode;
+    channelLegend.hidden = textMode || !networkMode;
     colorBtn.title = '切換漲跌配色';
     document.documentElement.dataset.colorMode = colorMode;
     document.body.classList.toggle('text-only', textMode);
@@ -252,7 +281,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
     queueMicrotask(syncInsets);
     world.onPick((hit) => {
       if (hit?.kind === 'node') selectNode(hit.path);
+      else if (hit?.kind === 'channel') selectChannel(hit.id);
+      else if (hit?.kind === 'proposal') selectProposal(hit.id);
     });
+    world.setNetworkMode(networkMode);
     world.onHover((path, pos) => {
       if (!path) {
         tooltip.hidden = true;
@@ -265,6 +297,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
       tooltip.hidden = false;
     });
     return world;
+  }
+
+  /** 截至本週出現過、尚未收錄的提議。 */
+  function proposalsFor(weekId: string) {
+    return index.channels.proposals.filter((p) => !p.promoted && p.weeks.some((x) => x.weekId <= weekId));
+  }
+
+  function syncChannels() {
+    const pending = proposalsFor(week.weekId);
+    proposalBtn.textContent = `待審提議 ${pending.length} 項`;
+    world?.setChannelActivity(index.channels.byWeek[week.weekId] ?? {}, pending);
   }
 
   function paramsFor(w: WeekData) {
@@ -292,7 +335,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
           await w.effects.ripple(ev.taiwanImpact.direction, ev.taiwanImpact.summary);
           if (token !== runToken) return;
         }
-        const flows = outgoingLinks(week, ev.id).map((l) => w.effects.flow(ev.primary, eventById(l.to)!.primary, l.label));
+        const flows = outgoingLinks(week, ev.id).map((l) => (l.channel && getChannel(l.channel)
+          ? w.effects.flowAlong(l.channel, l.label)
+          : w.effects.flow(ev.primary, eventById(l.to)!.primary, l.label)));
         await Promise.all(flows);
         if (token !== runToken) return;
       }
@@ -361,6 +406,23 @@ export async function startApp(root: HTMLElement): Promise<void> {
     showPanel(renderNodePanel(path, week, index));
   }
 
+  /** 點擊管線或面板裡的管道：暫停、高亮兩端並顯示管道面板。 */
+  function selectChannel(id: string) {
+    const c = getChannel(id);
+    if (textMode || !c) return;
+    pause();
+    world?.highlight([getChannelNode(c.from).path, getChannelNode(c.to).path]);
+    showPanel(renderChannelPanel(id, week, index));
+  }
+
+  function selectProposal(id: string) {
+    const p = index.channels.proposals.find((x) => x.id === id);
+    if (textMode || !p) return;
+    pause();
+    world?.highlight([p.fromPath, p.toPath]);
+    showPanel(renderProposalPanel(id, index));
+  }
+
   function toggleStoryline(id: string) {
     storyline = storyline === id ? null : id;
     const ids = new Set<string>();
@@ -404,6 +466,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       w.effects.clear();
       w.highlight([]);
       w.setWeekFocus(week.events.flatMap((e) => e.places));
+      syncChannels();
       if (first) w.setParams(paramsFor(week));
       else void w.tweenTo(paramsFor(week), 2000);
       if (!eventId) void (first && isNarrow() ? w.focusAsiaPacific(0) : w.resetCamera(first ? 0 : 1100));
@@ -439,6 +502,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
         w.effects.clear();
         w.highlight([]);
         w.setWeekFocus(week.events.flatMap((e) => e.places));
+        syncChannels();
         w.setParams(paramsFor(week));
         void w.resetCamera(0);
       }
@@ -447,6 +511,13 @@ export async function startApp(root: HTMLElement): Promise<void> {
       setHash(null);
       if (!isNarrow()) showPanel(introPanel());
     }
+  });
+
+  networkBtn.addEventListener('click', () => {
+    networkMode = !networkMode;
+    writePref(NETWORK_KEY, networkMode ? '1' : '0');
+    world?.setNetworkMode(networkMode);
+    syncChrome();
   });
 
   colorBtn.addEventListener('click', () => {
@@ -470,7 +541,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // E2E 測試鉤子：只在 ?test=1 時暴露。
   if (new URLSearchParams(location.search).has('test')) {
-    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
+    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), pickChannel: (id: string) => selectChannel(id), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
   }
 
   document.addEventListener('keydown', (e) => {
