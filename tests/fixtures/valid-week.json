@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "weekId": "2026-10-30",
+  "period": { "start": "2026-10-24", "end": "2026-10-30" },
+  "title": "財金週報（2026/10/24–2026/10/30）",
+  "indicators": {
+    "brent": { "value": 113, "range": [112, 115], "unit": "USD/bbl", "changePct": null, "note": "各來源報價時點不同" },
+    "nasdaq": { "value": 25437.0, "changePct": -2.86 }
+  },
+  "events": [
+    {
+      "id": "e1", "rank": 1, "date": "2026-10-30",
+      "title": "大型科技財報引爆 AI 支出疑慮",
+      "what": "那斯達克單日重挫。", "why": "市場焦點轉向資本支出。",
+      "discrepancy": null,
+      "taiwanImpact": { "summary": "牽動台灣供應鏈情緒", "direction": -1, "channels": ["半導體"] },
+      "primaryEntity": "us-tech", "entities": ["us-tech", "us-wallst", "tw-fab"],
+      "sentiment": -2, "storylines": ["ai-capex"],
+      "metrics": [{ "label": "那斯達克", "value": "25,437.00", "change": "-2.86%" }],
+      "sources": [{ "title": "Yahoo Finance", "url": "https://finance.yahoo.com/a.html" }]
+    },
+    {
+      "id": "e2", "rank": 2, "date": null,
+      "title": "荷莫茲海峽緊張",
+      "what": "油輪遇襲。", "why": "推升通膨。",
+      "discrepancy": "報價時點不同",
+      "taiwanImpact": null,
+      "primaryEntity": "sea-hormuz", "entities": ["sea-hormuz", "me-oil"],
+      "sentiment": -1, "storylines": [],
+      "metrics": [],
+      "sources": [{ "title": "Yahoo", "url": "https://finance.yahoo.com/b.html" }]
+    }
+  ],
+  "links": [{ "from": "e2", "to": "e1", "label": "能源價格壓抑風險資產" }],
+  "storylines": [{ "id": "ai-capex", "name": "AI 資本支出疑慮" }],
+  "watchlist": [{ "date": "2026-11-03", "text": "美國期中選舉", "entities": ["us-wallst"], "confirmed": true }]
+}
