@@ -57,8 +57,8 @@ export interface WorldView {
   setChannelActivity(a: Record<string, ChannelActivity>, proposals: ProposalSummary[]): void;
   /** 網絡模式：所有管道提亮並顯示名稱，島嶼與建築變淡。 */
   setNetworkMode(on: boolean): void;
-  /** 管線中點的螢幕座標（供測試）；找不到或不在畫面內時回傳 null。 */
-  channelScreenPoint(id: string): { x: number; y: number } | null;
+  /** 管線上位置 t（0–1，預設中點）的螢幕座標（供測試）；找不到或不在畫面內時回傳 null。 */
+  channelScreenPoint(id: string, t?: number): { x: number; y: number } | null;
   onHover(cb: (path: string | null, screen: { x: number; y: number }) => void): void;
   readonly graph: WorldGraph;
   readonly effects: Effects;
@@ -440,10 +440,10 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       channels.setNetwork(on);
       applyFade();
     },
-    channelScreenPoint(id) {
+    channelScreenPoint(id, t = 0.5) {
       const c = channels.curve(id);
       if (!c) return null;
-      const v = c.getPoint(0.5);
+      const v = c.getPoint(t);
       camera.updateMatrixWorld();
       v.project(camera);
       if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) return null;

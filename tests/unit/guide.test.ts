@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import { INDICATOR_KEYS } from '../../src/data/types';
 import { REGION_IDS } from '../../src/world/regions';
 import { SECTOR_IDS } from '../../src/world/sectors';
+import { CHANNELS } from '../../src/world/channels';
 
 const guide = readFileSync('docs/WEEKLY_DATA_GUIDE.md', 'utf8');
 
@@ -16,4 +17,10 @@ test('guide covers the v2 entity workflow', () => {
 
 test('guide embeds the latest example week verbatim', () => {
   expect(guide).toContain(readFileSync('data/weeks/2026-10-30.json', 'utf8').trim());
+});
+
+test.each(CHANNELS.map((c) => c.id))('guide lists channel %s', (id) => expect(guide).toContain(`\`${id}\``));
+
+test('guide covers channel tagging and proposals', () => {
+  for (const s of ['proposedChannels', 'fromVar', 'toVar', 'evidence', '碰到', '`channel`', '`channels`', '不填強度']) expect(guide, s).toContain(s);
 });
