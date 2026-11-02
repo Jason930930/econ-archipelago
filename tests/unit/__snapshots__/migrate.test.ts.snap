@@ -1,0 +1,451 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`migrated week matches snapshot 1`] = `
+{
+  "events": [
+    {
+      "date": "2026-10-30",
+      "discrepancy": "Yahoo 內文與收盤報價框的道瓊跌點、S&P 跌幅略有不同；TheStreet 收盤數字為道瓊 51,785.82、S&P 7,578.97、那斯達克 25,442.31，此處採 Yahoo 收盤報價。「Intel 為 1974 年以來最差單日」僅見於單一來源，未能獨立查證。",
+      "id": "e1",
+      "metrics": [
+        {
+          "change": "-2.86%",
+          "label": "那斯達克",
+          "value": "25,437.00",
+        },
+        {
+          "change": "-1.82%",
+          "label": "S&P 500",
+          "value": "7,580.07",
+        },
+        {
+          "change": "-1.09%",
+          "label": "道瓊",
+          "value": "51,770.31",
+        },
+        {
+          "label": "Intel",
+          "value": "單日約 -29%",
+        },
+        {
+          "label": "費半 ETF",
+          "value": "單日約 -7.9%",
+        },
+        {
+          "label": "那斯達克 10 月",
+          "value": "約 -5.2% 至 -5.3%",
+        },
+      ],
+      "places": [
+        "us/tech",
+        "us/equity",
+        "tw/semiconductor",
+      ],
+      "primary": "us/tech",
+      "rank": 1,
+      "sentiment": -3,
+      "sources": [
+        {
+          "title": "Yahoo Finance",
+          "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-october-30-dow-sp-500-nasdaq-amazon-intel-ai-sell-off-191429143.html",
+        },
+        {
+          "title": "TheStreet",
+          "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-oct-30-2026",
+        },
+      ],
+      "storylines": [
+        "ai-capex",
+      ],
+      "taiwanImpact": {
+        "channels": [
+          "半導體",
+          "供應鏈",
+        ],
+        "direction": -1,
+        "summary": "AI 資本支出疑慮牽動半導體與台灣供應鏈情緒。",
+      },
+      "title": "大型科技財報引爆 AI 支出疑慮，那斯達克單日重挫、10 月跌逾 5%",
+      "what": "Alphabet、Amazon 財報被報導低於預期，Intel 因第四季財測遠弱於預期，10/30 股價收跌約 29%。10/30 美股收盤：道瓊 51,770.31（-1.09%）、S&P 500 7,580.07（-1.82%）、那斯達克 25,437.00（-2.86%）。那斯達克 10 月累計約 -5.2% 至 -5.3%，為 2025 年 3 月以來最差單月；S&P 500 10 月約 -1.2%。費半 ETF 單日約 -7.9%。",
+      "why": "市場焦點從 AI 需求轉向巨額資本支出能否換來獲利，並牽動半導體與台灣供應鏈情緒。",
+    },
+    {
+      "date": "2026-10-28",
+      "discrepancy": "會前 FedWatch 同時顯示 10 月維持不變機率約 90.6%，與 12 月升息機率屬不同會議。",
+      "id": "e2",
+      "metrics": [
+        {
+          "change": "維持不變",
+          "label": "聯邦基金利率",
+          "value": "3.75%–4.00%",
+        },
+        {
+          "label": "投票",
+          "value": "10 比 2",
+        },
+        {
+          "label": "12 月升息機率（會前）",
+          "value": "約 73%",
+        },
+        {
+          "change": "失業率 4.2%",
+          "label": "9 月非農",
+          "value": "+2.9 萬人",
+        },
+      ],
+      "places": [
+        "us/central-bank",
+      ],
+      "primary": "us/central-bank",
+      "rank": 2,
+      "sentiment": -2,
+      "sources": [
+        {
+          "title": "INDmoney",
+          "url": "https://www.indmoney.com/blog/us-stocks/fed-rate-decision-october-inflation-stock-market-impact",
+        },
+        {
+          "title": "Kiplinger",
+          "url": "https://www.kiplinger.com/investing/live/fed-meeting-updates-and-commentary-october-2026",
+        },
+        {
+          "title": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/28/fed-interest-rate-decision-october-2026.html",
+        },
+      ],
+      "storylines": [
+        "fed-hiking-cycle",
+      ],
+      "taiwanImpact": null,
+      "title": "Fed 10/28 維持利率 3.75%–4.00%，兩位官員主張再升息",
+      "what": "Fed 以 10 比 2 決議按兵不動，理事 Cook 與克里夫蘭聯銀總裁 Hammack 持異議，主張升息 25 bp。此區間是 9 月升息 25 bp（三年來首度）後的水準。聲明將經濟成長形容為「strong pace」；9 月非農僅增 2.9 萬人、失業率 4.2%。會後 Musalem、Barkin 等官員也表示利率需要上調。",
+      "why": "降息預期已轉為升息預期；會前 CME FedWatch 顯示 12 月升息機率約 73%（會前數據，會後未查得更新）。下次會議為 12/8–9。",
+    },
+    {
+      "date": "2026-10-30",
+      "discrepancy": "各來源油價與金價報價時點不同（Yahoo 內文 Brent 112、另一段摘要約 115；金價 3,934–3,986），未能取得一致的收盤價。「美伊緊張」主要來自標題與二手摘要，Yahoo 黃金文章內文未點名伊朗。",
+      "id": "e3",
+      "metrics": [
+        {
+          "label": "Brent",
+          "value": "約 112–115 美元",
+        },
+        {
+          "label": "WTI",
+          "value": "約 103–104 美元",
+        },
+        {
+          "change": "-2% 至 -3.6%",
+          "label": "黃金 12 月期貨",
+          "value": "3,886–3,986 美元",
+        },
+      ],
+      "places": [
+        "seas/shipping-lane/hormuz",
+        "gulf/energy",
+        "intl/commodities/gold",
+      ],
+      "primary": "seas/shipping-lane/hormuz",
+      "rank": 3,
+      "sentiment": -2,
+      "sources": [
+        {
+          "title": "Yahoo Finance（黃金）",
+          "url": "https://finance.yahoo.com/personal-finance/investing/article/gold-price-today-friday-october-30-2026-gold-slips-below-4000-as-mid-east-concerns-mount-111451238.html",
+        },
+        {
+          "title": "Yahoo Finance（即時盤勢）",
+          "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-october-30-dow-sp-500-nasdaq-amazon-intel-ai-sell-off-191429143.html",
+        },
+      ],
+      "storylines": [
+        "mideast-energy",
+      ],
+      "taiwanImpact": null,
+      "title": "荷莫茲海峽緊張，油價維持高檔、黃金跌破 4,000 美元",
+      "what": "10/30 一艘油輪在荷莫茲海峽被附著爆裂物攻擊（據 UKMTO，攻擊者不明）。Brent 約 112–115 美元、WTI 約 103–104 美元，油價 10 月可能連續第四個月上漲。黃金 12 月期貨一度跌破 4,000 美元，報價 3,886–3,986 美元不等（-2% 至 -3.6%）。",
+      "why": "能源價格推升通膨與升息預期，並壓抑風險資產；市場也在關注美國期中選舉後的中東局勢。",
+    },
+    {
+      "date": "2026-10-30",
+      "discrepancy": "本週完整週漲跌幅、外資買賣超與新台幣匯率未能從可讀來源查得；本段主要依單一財經部落格，另有鉅亨網盤中速報提到 3.42% 跌幅（44,782 點），日期未能確認，未採用。",
+      "id": "e4",
+      "metrics": [
+        {
+          "change": "-2.49%",
+          "label": "加權指數",
+          "value": "45,211.83",
+        },
+        {
+          "change": "-4.42%",
+          "label": "櫃買指數",
+          "value": "370.26",
+        },
+        {
+          "change": "單一來源",
+          "label": "成交量",
+          "value": "約 879 億元",
+        },
+      ],
+      "places": [
+        "tw/equity",
+        "tw/semiconductor",
+      ],
+      "primary": "tw/equity",
+      "rank": 4,
+      "sentiment": -2,
+      "sources": [
+        {
+          "title": "方格子 vocus",
+          "url": "https://vocus.cc/article/6ae4abbafd89780001a8550c",
+        },
+      ],
+      "storylines": [],
+      "taiwanImpact": {
+        "channels": [
+          "台股",
+          "電子權值股",
+        ],
+        "direction": -1,
+        "summary": "台股與 AI、美科技股連動度高，美股大跌後加權指數連兩日走跌，電子權值股遭賣超。",
+      },
+      "title": "台股連兩日走跌，加權指數 10/30 收 45,211.83（-2.49%）",
+      "what": "加權指數 10/29 收 46,368.33（-1.42%），10/30 開 46,139.79、盤中低 44,726.26，收 45,211.83，下跌 1,156.50 點；櫃買指數收 370.26（-4.42%）；成交量約 879 億元（單一部落格數字）。多數電子權值股遭賣超。",
+      "why": "台股對 AI 與美科技股連動度高，美股大跌後修正；10/28 收盤約 47,035（由 10/29 數字回推）。",
+    },
+    {
+      "date": null,
+      "discrepancy": null,
+      "id": "e5",
+      "metrics": [
+        {
+          "change": "月增 0.6%",
+          "label": "CPI 年增",
+          "value": "3.7%",
+        },
+        {
+          "change": "月增 0.3%",
+          "label": "核心 CPI",
+          "value": "年增 2.6%",
+        },
+        {
+          "change": "10/28 約 5.05%",
+          "label": "10 年期殖利率",
+          "value": "約 4.93%",
+        },
+        {
+          "label": "幣安駭客事件",
+          "value": "約 63 億美元",
+        },
+        {
+          "change": "-2.7%",
+          "label": "比特幣",
+          "value": "約 76,700 美元",
+        },
+      ],
+      "places": [
+        "us/bonds",
+        "us/central-bank",
+        "intl/crypto/bitcoin",
+      ],
+      "primary": "us/bonds",
+      "rank": 5,
+      "sentiment": -2,
+      "sources": [
+        {
+          "title": "Kiplinger",
+          "url": "https://www.kiplinger.com/investing/live/fed-meeting-updates-and-commentary-october-2026",
+        },
+        {
+          "title": "INDmoney",
+          "url": "https://www.indmoney.com/blog/us-stocks/fed-rate-decision-october-inflation-stock-market-impact",
+        },
+      ],
+      "storylines": [
+        "fed-hiking-cycle",
+      ],
+      "taiwanImpact": null,
+      "title": "美國通膨與殖利率仍高，升息壓力延續",
+      "what": "9 月 CPI 年增 3.7%（月增 0.6%），汽油月漲 9.1%，核心 CPI 月增 0.3%、年增 2.6%，高於預期。10 年期殖利率 10/28 約 5.05%，10/30 報價約 4.93%。Yahoo 報導 9 月 PCE 偏熱，推升 12 月升息預期，但未查得具體 PCE 數字。另：Yahoo 提到幣安發生約 63 億美元駭客事件，比特幣約 76,700 美元（-2.7%）。",
+      "why": "利率高檔與升息預期壓縮高估值科技股，也影響匯率與新興市場資金。",
+    },
+  ],
+  "indicators": {
+    "brent": {
+      "changePct": null,
+      "note": "各來源報價時點不同（Yahoo 內文 112、另一段摘要約 115），取區間中點",
+      "range": [
+        112,
+        115,
+      ],
+      "unit": "USD/bbl",
+      "value": 113.5,
+    },
+    "btc": {
+      "changePct": -2.7,
+      "note": "Yahoo 報導",
+      "unit": "USD",
+      "value": 76700,
+    },
+    "cpiYoY": {
+      "note": "9 月 CPI",
+      "unit": "%",
+      "value": 3.7,
+    },
+    "dow": {
+      "changePct": -1.09,
+      "note": "10/30 單日漲跌（Yahoo 收盤報價）；TheStreet 為 51,785.82",
+      "value": 51770.31,
+    },
+    "fedFunds": {
+      "note": "10/28 維持 3.75%–4.00%，取上緣",
+      "range": [
+        3.75,
+        4,
+      ],
+      "unit": "%",
+      "value": 4,
+    },
+    "gold": {
+      "changePct": null,
+      "note": "12 月期貨，報價 3,886–3,986 美元不等，取區間中點",
+      "range": [
+        3886,
+        3986,
+      ],
+      "unit": "USD/oz",
+      "value": 3936,
+    },
+    "nasdaq": {
+      "changePct": -2.86,
+      "note": "10/30 單日漲跌（Yahoo 收盤報價）；10 月累計約 -5.2% 至 -5.3%",
+      "value": 25437,
+    },
+    "sp500": {
+      "changePct": -1.82,
+      "note": "10/30 單日漲跌（Yahoo 收盤報價）；10 月約 -1.2%",
+      "value": 7580.07,
+    },
+    "taiex": {
+      "changePct": -2.49,
+      "note": "10/30 單日漲跌",
+      "value": 45211.83,
+    },
+    "us10y": {
+      "changePct": null,
+      "note": "10/30 報價；10/28 約 5.05%",
+      "unit": "%",
+      "value": 4.93,
+    },
+    "wti": {
+      "changePct": null,
+      "note": "約 103–104 美元，取區間中點",
+      "range": [
+        103,
+        104,
+      ],
+      "unit": "USD/bbl",
+      "value": 103.5,
+    },
+  },
+  "links": [
+    {
+      "from": "e3",
+      "label": "能源價格推升通膨",
+      "to": "e5",
+    },
+    {
+      "from": "e5",
+      "label": "通膨強化升息預期",
+      "to": "e2",
+    },
+    {
+      "from": "e5",
+      "label": "高利率壓縮科技股估值",
+      "to": "e1",
+    },
+    {
+      "from": "e1",
+      "label": "美科技股大跌拖累台股",
+      "to": "e4",
+    },
+  ],
+  "period": {
+    "end": "2026-10-30",
+    "start": "2026-10-24",
+  },
+  "schemaVersion": 2,
+  "storylines": [],
+  "title": "財金週報（2026/10/24–2026/10/30）",
+  "watchlist": [
+    {
+      "confirmed": true,
+      "date": "2026-11-02",
+      "places": [
+        "us/tech",
+      ],
+      "text": "Apple（新任 CEO Ternus 首次財報）、Palantir 盤後財報",
+    },
+    {
+      "confirmed": true,
+      "date": "2026-11-03",
+      "places": [
+        "us/equity",
+        "us/tech",
+      ],
+      "text": "美國期中選舉；AMD 盤後財報",
+    },
+    {
+      "confirmed": true,
+      "date": "2026-11-04",
+      "places": [
+        "us/tech",
+      ],
+      "text": "Arm、AppLovin 等盤後財報",
+    },
+    {
+      "confirmed": true,
+      "date": "2026-11-05",
+      "places": [
+        "us/tech",
+      ],
+      "text": "Qualcomm、Airbnb 等盤後財報",
+    },
+    {
+      "confirmed": false,
+      "date": "2026-11-06",
+      "places": [
+        "us/central-bank",
+      ],
+      "text": "美國 10 月就業報告（依慣例應為第一個週五）",
+    },
+    {
+      "confirmed": true,
+      "date": "2026-11-07",
+      "places": [
+        "us/equity",
+      ],
+      "text": "波克夏財報（巴菲特卸任董事長後首次）",
+    },
+    {
+      "confirmed": true,
+      "date": null,
+      "places": [
+        "seas/shipping-lane/hormuz",
+        "gulf/energy",
+        "us/bonds",
+      ],
+      "text": "持續追蹤荷莫茲海峽與中東局勢、油價、10 年期殖利率",
+    },
+    {
+      "confirmed": true,
+      "date": "2026-12-08",
+      "places": [
+        "us/central-bank",
+      ],
+      "text": "Fed 下次會議 12/8–9",
+    },
+  ],
+  "weekId": "2026-10-30",
+}
+`;
