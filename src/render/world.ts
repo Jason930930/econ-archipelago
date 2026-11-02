@@ -17,6 +17,8 @@ export interface WorldView {
   highlight(ids: EntityId[]): void;
   setColorMode(m: ColorMode): void;
   setLowPower(on: boolean): void;
+  setTimeScale(s: number): void;
+  setInsets(right: number, bottom: number): void;
   onPick(cb: (id: EntityId | null) => void): void;
   onHover(cb: (id: EntityId | null, screen: { x: number; y: number }) => void): void;
   effects: Effects;
@@ -140,6 +142,8 @@ export function createWorld(canvas: HTMLCanvasElement): WorldView {
       if (current) apply(current);
     },
     setLowPower: stage.setLowPower,
+    setTimeScale: stage.setTimeScale,
+    setInsets: stage.setInsets,
     onPick: (cb) => void pickCbs.push(cb),
     onHover: (cb) => void hoverCbs.push(cb),
     effects,

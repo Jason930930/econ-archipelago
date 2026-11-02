@@ -76,7 +76,7 @@ a { color: var(--accent); }
 
 /* 右側面板 */
 .panel {
-  position: fixed; z-index: 9; right: 16px; top: 108px; bottom: 168px; width: 380px;
+  position: fixed; z-index: 9; right: 16px; top: 108px; bottom: calc(var(--bottombar-h, 156px) + 24px); width: 380px;
   background: var(--surface); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 14px;
   box-shadow: var(--shadow); overflow: auto; padding: 16px 18px; overscroll-behavior: contain;
 }

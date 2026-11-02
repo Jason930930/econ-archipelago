@@ -30,6 +30,10 @@ export interface Stage {
   setHaze(level: number): void;
   setLowPower(on: boolean): void;
   readonly lowPower: boolean;
+  /** 所有補間時長乘上此倍率（播放 2× 或測試加速用）。 */
+  setTimeScale(s: number): void;
+  /** 被 UI 遮住的右側與下方像素；相機會以剩下的可見區域為中心。 */
+  setInsets(right: number, bottom: number): void;
   /** 讓相機看向 (x, z)，zoom 為正交縮放倍率。 */
   lookAt(x: number, z: number, zoom: number, ms: number): Promise<void>;
   dispose(): void;
@@ -151,6 +155,8 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   let weatherTarget = WEATHER_TARGETS.cloudy;
   let hazeTarget = 0;
   let lowPower = false;
+  let timeScale = 1;
+  let insets = { right: 0, bottom: 0 };
   let nextFlash = 3;
 
   const frameFns = new Set<FrameFn>();
@@ -163,12 +169,21 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
     const h = canvas.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false);
     labels.setSize(w, h);
-    const aspect = w / h;
-    const halfH = Math.max(13, 23 / aspect);
-    camera.left = -halfH * aspect;
-    camera.right = halfH * aspect;
+    // 可見區域 = 畫布扣掉 UI 遮住的部分；用 view offset 讓可見區域中心對準相機目標。
+    const right = Math.min(insets.right, w * 0.6);
+    const bottom = Math.min(insets.bottom, h * 0.6);
+    const vw = w - right;
+    const vh = h - bottom;
+    const halfVisible = Math.max(13, 23 / (vw / vh));
+    const fullW = w + right;
+    const fullH = h + bottom;
+    const halfH = (halfVisible * fullH) / vh;
+    camera.left = (-halfH * fullW) / fullH;
+    camera.right = (halfH * fullW) / fullH;
     camera.top = halfH;
     camera.bottom = -halfH;
+    if (right > 0 || bottom > 0) camera.setViewOffset(fullW, fullH, right, bottom, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize);
@@ -250,7 +265,8 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
   }
   raf = requestAnimationFrame(frame);
 
-  function animate(ms: number, fn: (k: number) => void): Promise<void> {
+  function animate(rawMs: number, fn: (k: number) => void): Promise<void> {
+    const ms = rawMs * timeScale;
     if (ms <= 0) {
       fn(1);
       return Promise.resolve();
@@ -297,6 +313,14 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement): St
       renderer.shadowMap.enabled = !on;
       renderer.setPixelRatio(on ? 1 : Math.min(window.devicePixelRatio, 2));
       resize();
+    },
+    setInsets(right, bottom) {
+      if (right === insets.right && bottom === insets.bottom) return;
+      insets = { right, bottom };
+      resize();
+    },
+    setTimeScale(s) {
+      timeScale = s;
     },
     get lowPower() {
       return lowPower;

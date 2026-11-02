@@ -62,6 +62,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
     return new THREE.Vector3(x, y, z);
   };
   const topOf = (id: EntityId) => pos(id, (landmarks.get(id)?.top ?? 1.5) + 0.3);
+  /** 漣漪標籤只保留到下一次脈衝，避免畫面堆積。 */
+  let rippleTags: THREE.Object3D[] = [];
 
   function remove(o: THREE.Object3D) {
     o.traverse((c) => {
@@ -78,6 +80,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
   async function pulse(id: EntityId, sentiment: number): Promise<void> {
     const lm = landmarks.get(id);
     if (!lm) return;
+    rippleTags.forEach(remove);
+    rippleTags = [];
     const color = sentimentColor(sentiment);
     const ring = ringMesh(color, 0.85, 1.1);
     ring.position.copy(pos(id, 0.55));
@@ -168,6 +172,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
     const tag = label(['對台灣的影響', summary], 'fx-ripple', `#${color.getHexString()}`);
     tag.position.copy(target).add(new THREE.Vector3(3.2, 1.2, 1.6));
     root.add(tag);
+    rippleTags.push(tag);
     await stage.animate(900, (k) => {
       hit.scale.setScalar(1 + k * 1.5);
       (hit.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k);
@@ -176,12 +181,18 @@ export function createEffects(ctx: EffectsCtx): Effects {
   }
 
   function showFlags(items: { entity: EntityId; text: string; confirmed: boolean }[]): void {
-    const byEntity = new Map<EntityId, string[]>();
+    // 旗子插在每個地標上；標籤則每座島合併成一個，避免相鄰地標的標籤重疊。
+    const byEntity = new Map<EntityId, true>();
+    const byIsland = new Map<string, { anchor: EntityId; lines: string[] }>();
     for (const it of items) {
-      const line = it.confirmed ? it.text : `${it.text}（未確認）`;
-      byEntity.set(it.entity, [...(byEntity.get(it.entity) ?? []), line]);
+      byEntity.set(it.entity, true);
+      const island = getEntity(it.entity).island;
+      const key = island === 'sea' ? it.entity : island;
+      const g = byIsland.get(key) ?? { anchor: it.entity, lines: [] };
+      g.lines.push(it.confirmed ? it.text : `${it.text}（未確認）`);
+      byIsland.set(key, g);
     }
-    for (const [id, lines] of byEntity) {
+    for (const id of byEntity.keys()) {
       const top = topOf(id);
       const g = new THREE.Group();
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 5), new THREE.MeshStandardMaterial({ color: '#ddd' }));
@@ -191,7 +202,10 @@ export function createEffects(ctx: EffectsCtx): Effects {
       g.add(pole, flag);
       g.position.set(top.x, 0, top.z);
       root.add(g);
-      const tag = label(lines.slice(0, 3).concat(lines.length > 3 ? [`…另 ${lines.length - 3} 項`] : []), 'fx-flag');
+    }
+    for (const { anchor, lines } of byIsland.values()) {
+      const top = topOf(anchor);
+      const tag = label(lines.slice(0, 4).concat(lines.length > 4 ? [`…另 ${lines.length - 4} 項`] : []), 'fx-flag');
       tag.position.set(top.x + 0.6, top.y + 2.1, top.z);
       root.add(tag);
     }
@@ -201,6 +215,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
     stage.cancelTweens();
     for (const lm of landmarks.values()) lm.group.scale.setScalar(1);
     for (const c of [...root.children]) remove(c);
+    rippleTags = [];
   }
 
   return { pulse, flow, ripple, showFlags, clear };
