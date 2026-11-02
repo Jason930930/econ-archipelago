@@ -442,5 +442,25 @@
       ],
       "confirmed": true
     }
+  ],
+  "nodeStates": [
+    {
+      "node": "tw.foreign-flow",
+      "level": "low",
+      "direction": -1,
+      "basis": "外資連 8 個交易日賣超，10/16 賣超 461 億元",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "node": "tw.tsmc",
+      "level": "high",
+      "direction": 1,
+      "basis": "Q3 營收季增 16.2%、高於財測上緣，全年營收預估成長約 44%",
+      "evidence": [
+        "e4"
+      ]
+    }
   ]
 }

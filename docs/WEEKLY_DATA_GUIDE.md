@@ -35,7 +35,8 @@
   "storylines": [ … ],                          // 本週「新出現」的主線定義，見第 8 節
   "watchlist": [ … ],                           // 下週值得關注，見第 9 節
   "newEntities": [ … ],                         // 本週第一次出現的實體（可省略），見第 4 節
-  "proposedChannels": [ … ]                     // 提議新的傳導管道（可省略），見第 11 節
+  "proposedChannels": [ … ],                    // 提議新的傳導管道（可省略），見第 11 節
+  "nodeStates": [ … ]                           // 週報明確陳述的節點狀態（可省略），見第 12 節
 }
 ```
 
@@ -671,6 +672,17 @@
       ],
       "confirmed": true
     }
+  ],
+  "nodeStates": [
+    {
+      "node": "seas.hormuz-risk",
+      "level": "high",
+      "direction": 1,
+      "basis": "一艘油輪在荷莫茲海峽被附著爆裂物攻擊",
+      "evidence": [
+        "e3"
+      ]
+    }
   ]
 }
 ```
@@ -761,3 +773,43 @@
 - `mechanism`：一句話說明機制，用週報的說法，不可為空。
 - `evidence`：本週的事件 id（至少一個），每個事件的 place 都要碰到 `fromPath` 或 `toPath`。
 - 提議被收錄後（精選清單會用同一個 id 與兩端），舊週檔裡的提議保持原樣即可；之後的週直接用該管道標註，不要再提議。
+
+## 12. 節點狀態（nodeStates）
+
+網站上每個傳導節點都有一張「狀態卡」（目前水準：高／中／低，近期方向：↑ → ↓）。其中有數字的節點由系統自動更新，**排程只負責下表 18 個定性節點**，而且只在週報**明確陳述**時才填。
+
+```json
+"nodeStates": [
+  { "node": "tw.foreign-flow", "level": "low", "direction": -1, "basis": "外資賣超約 815.82 億元", "evidence": ["e4"] }
+]
+```
+
+- `node`：下表的節點 id。
+- `level`：`"high"`、`"mid"`、`"low"`，意義見下表（高／低是節點變數本身的水準，不是好壞）。
+- `direction`：`1` 上升、`0` 持平、`-1` 下降；週報沒寫方向時，依它描述的變化判斷，真的看不出就用 `0`。
+- `basis`：一句話，盡量引用週報原文，不可為空。
+- `evidence`：本週的事件 id（至少一個），事件的某個 place 必須碰到節點路徑（「碰到」的定義見第 11.1 節）。碰不到時**不要硬填**。
+- 同一週同一節點只能一筆。
+- **不要手動沿用上週的狀態**：週報沒提到的節點就不要寫，網站會自動沿用最近一次並標示「沿用 N 週前」。
+- 以下節點的狀態來自數字，**不要填**（驗證會失敗）：由 FRED 每日更新的 16 個（油價、美國與歐元區通膨、Fed／ECB／日銀利率、美債殖利率、美元、美股、科技股估值、歐洲能源成本、日圓、澳洲原物料、比特幣、全球風險偏好、新台幣），以及由 `indicators` 決定的 `intl.gold`、`tw.equity`。
+
+| 節點 id | 名稱 | 路徑 | `high` 代表 | `low` 代表 |
+|---|---|---|---|---|
+| `gulf.geopolitics` | 中東地緣衝突 | `gulf/government` | 衝突升高、攻擊或談判破裂 | 緩和、停火、談判進展 |
+| `intl.opec-supply` | OPEC+ 供給 | `intl/organization/opec` | 增產、供給充裕 | 減產、供給緊縮 |
+| `seas.hormuz-risk` | 荷莫茲航運風險 | `seas/shipping-lane/hormuz` | 船隻遇襲、封鎖威脅 | 航運恢復正常 |
+| `seas.red-sea-risk` | 紅海航運風險 | `seas/shipping-lane/red-sea` | 攻擊、繞道、運費飆升 | 航運恢復正常 |
+| `us.ai-capex` | AI 資本支出 | `us/tech` | 大型科技公司上調資本支出 | 削減或延後資本支出 |
+| `us.tariff` | 美國關稅 | `us/trade` | 加徵、擴大關稅 | 降稅、豁免、協議 |
+| `us.fiscal` | 美國財政赤字 | `us/government` | 赤字擴大、大規模支出或減稅 | 赤字縮小、撙節 |
+| `ru.energy-supply` | 俄羅斯能源供給 | `ru/energy` | 出口增加、制裁放寬 | 煉油廠或管線受襲、制裁收緊 |
+| `cn.industry` | 中國製造業 | `cn/industry` | PMI 擴張、生產強勁 | PMI 收縮、生產疲弱 |
+| `cn.real-estate` | 中國房地產 | `cn/real-estate` | 銷售回溫、房價止跌 | 房企違約、銷售下滑 |
+| `kr.memory` | 韓國記憶體景氣 | `kr/memory` | 記憶體價格上漲、出貨強 | 價格下跌、庫存升高 |
+| `kr.equity` | 韓股 | `kr/equity` | 韓股大漲 | 韓股大跌 |
+| `tw.semis` | 台灣半導體景氣 | `tw/semiconductor` | 訂單、產能利用率、出口強勁 | 訂單下修、景氣轉弱 |
+| `tw.tsmc` | 台積電營運 | `tw/semiconductor/tsmc` | 營收、財測優於預期 | 營收、財測低於預期 |
+| `tw.foreign-flow` | 外資買賣超 | `tw/equity` | 大幅買超 | 大幅賣超 |
+| `tw.policy-rate` | 台灣央行利率 | `tw/central-bank` | 升息或釋出緊縮訊號 | 降息或釋出寬鬆訊號 |
+| `tw.exports` | 台灣出口 | `tw/trade` | 出口年增強勁 | 出口衰退 |
+| `tw.strait-risk` | 台海緊張 | `seas/shipping-lane/taiwan-strait` | 軍演、緊張升高 | 緩和 |

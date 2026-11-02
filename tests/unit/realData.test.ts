@@ -27,3 +27,10 @@ test('backfilled channels', async () => {
   expect(w23['oil-to-us-inflation']!.streak).toBe(2);
   expect(w30['us-equity-to-tw-equity']!.intensity).toBeGreaterThanOrEqual(1);
 });
+
+test('backfilled node states', () => {
+  const w23 = files.find((f) => f.fileName === '2026-10-23.json')!.raw as { nodeStates?: { node: string; level: string; direction: number }[] };
+  expect(w23.nodeStates?.find((n) => n.node === 'tw.foreign-flow')).toMatchObject({ level: 'low', direction: -1 });
+  const w30 = files.find((f) => f.fileName === '2026-10-30.json')!.raw as { nodeStates?: { node: string }[] };
+  expect(w30.nodeStates?.map((n) => n.node)).toEqual(['seas.hormuz-risk']);
+});

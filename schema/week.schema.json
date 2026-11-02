@@ -491,6 +491,49 @@
           }
         }
       }
+    },
+    "nodeStates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "node",
+          "level",
+          "direction",
+          "basis",
+          "evidence"
+        ],
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "level": {
+            "enum": [
+              "high",
+              "mid",
+              "low"
+            ]
+          },
+          "direction": {
+            "enum": [
+              -1,
+              0,
+              1
+            ]
+          },
+          "basis": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   }
 }

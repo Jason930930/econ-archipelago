@@ -143,7 +143,9 @@
       "taiwanImpact": null,
       "primary": "gulf/energy",
       "places": [
-        "gulf/energy"
+        "gulf/energy",
+        "gulf/government",
+        "seas/shipping-lane/red-sea"
       ],
       "sentiment": -2,
       "storylines": [
@@ -379,6 +381,44 @@
         "gulf/energy"
       ],
       "confirmed": true
+    }
+  ],
+  "nodeStates": [
+    {
+      "node": "us.ai-capex",
+      "level": "high",
+      "direction": 1,
+      "basis": "Meta 把 2026 年資本支出下限上調至 1,350 億美元",
+      "evidence": [
+        "e1"
+      ]
+    },
+    {
+      "node": "gulf.geopolitics",
+      "level": "high",
+      "direction": 1,
+      "basis": "川普稱未與伊朗談判；沙烏地 Shaybah 油田遭無人機攻擊",
+      "evidence": [
+        "e2"
+      ]
+    },
+    {
+      "node": "seas.red-sea-risk",
+      "level": "high",
+      "direction": 1,
+      "basis": "紅海航運風險上升",
+      "evidence": [
+        "e2"
+      ]
+    },
+    {
+      "node": "tw.foreign-flow",
+      "level": "low",
+      "direction": -1,
+      "basis": "外資賣超約 815.82 億元",
+      "evidence": [
+        "e4"
+      ]
     }
   ]
 }
