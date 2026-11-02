@@ -41,9 +41,29 @@ jobs:
         with:
           path: dist
 
+  # 排程演練：加一份合成的「下一週」再跑一次完整檢查，確保新資料進來不會卡住部署。不部署。
+  rehearsal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 產生合成下一週
+        run: npx tsx scripts/synthetic-week.ts
+      - run: npm run validate
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: E2E（含合成週）
+        run: npm run e2e
+        env:
+          CI: true
+
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, rehearsal]
     runs-on: ubuntu-latest
     permissions:
       pages: write

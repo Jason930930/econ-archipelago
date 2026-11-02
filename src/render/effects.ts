@@ -64,6 +64,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
   const topOf = (id: EntityId) => pos(id, (landmarks.get(id)?.top ?? 1.5) + 0.3);
   /** 漣漪標籤只保留到下一次脈衝，避免畫面堆積。 */
   let rippleTags: THREE.Object3D[] = [];
+  /** clear() 會遞增；進行中的特效在每個 await 後比對，不同就中止，避免在新的一週畫出舊資料。 */
+  let generation = 0;
 
   function remove(o: THREE.Object3D) {
     o.traverse((c) => {
@@ -80,6 +82,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
   async function pulse(id: EntityId, sentiment: number): Promise<void> {
     const lm = landmarks.get(id);
     if (!lm) return;
+    const gen = generation;
     rippleTags.forEach(remove);
     rippleTags = [];
     const color = sentimentColor(sentiment);
@@ -103,6 +106,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
     lm.group.scale.setScalar(1);
     remove(ring);
     remove(column);
+    if (gen !== generation) return;
   }
 
   async function flow(from: EntityId, to: EntityId, text: string): Promise<void> {
@@ -110,6 +114,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
       await pulse(from, 0);
       return;
     }
+    const gen = generation;
     const a = topOf(from);
     const b = topOf(to);
     const dist = a.distanceTo(b);
@@ -146,10 +151,12 @@ export function createEffects(ctx: EffectsCtx): Effects {
       (points.material as THREE.PointsMaterial).opacity = k < 0.9 ? 1 : (1 - k) * 10;
     });
     remove(points);
+    if (gen !== generation) return;
     (arc.material as THREE.LineDashedMaterial).opacity = 0.4;
   }
 
   async function ripple(direction: -1 | 0 | 1, summary: string): Promise<void> {
+    const gen = generation;
     const c = UP_DOWN[ctx.colorMode()];
     const color = new THREE.Color(direction > 0 ? c.up : direction < 0 ? c.down : '#cfd8dc');
     const target = pos('tw-twse', 0.55);
@@ -165,6 +172,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
       (wave.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k * 0.7);
     });
     remove(wave);
+    if (gen !== generation) return;
 
     const hit = ringMesh(color, 0.7, 1.05);
     hit.position.copy(target);
@@ -212,6 +220,7 @@ export function createEffects(ctx: EffectsCtx): Effects {
   }
 
   function clear(): void {
+    generation++;
     stage.cancelTweens();
     for (const lm of landmarks.values()) lm.group.scale.setScalar(1);
     for (const c of [...root.children]) remove(c);

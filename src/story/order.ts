@@ -1,4 +1,4 @@
-import type { WeekData } from '../data/types';
+import type { CausalLink, WeekData } from '../data/types';
 
 export type Step = { kind: 'event'; eventId: string } | { kind: 'finale' };
 
@@ -27,6 +27,12 @@ export function orderEvents(week: WeekData): string[] {
     }
   }
   return result.length === byRank.length ? result : byRank.map((e) => e.id);
+}
+
+/** 事件的所有對外因果連線（不只連到下一步的那一條）。 */
+export function outgoingLinks(week: WeekData, eventId: string): CausalLink[] {
+  const ids = new Set(week.events.map((e) => e.id));
+  return week.links.filter((l) => l.from === eventId && l.to !== eventId && ids.has(l.to));
 }
 
 export function buildSteps(week: WeekData): Step[] {

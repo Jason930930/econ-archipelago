@@ -15,8 +15,9 @@
    - 失敗：依錯誤訊息（格式為 `檔名 JSON路徑: 原因`）修正後重跑，**最多重試 2 次**。仍失敗時：
      `git checkout -b data/week-<日期> && git add data/weeks/<日期>.json && git commit -m "data: week <日期> (validation failed)" && git push origin data/week-<日期>`
      **不要推到 main。**
-5. 推到 main 後，GitHub Actions 會再驗證一次並自動部署網站：https://jason930930.github.io/econ-archipelago/
-6. 在 SendUserMessage 結尾加一行「世界更新：成功（網址）」或「世界更新：失敗（原因；分支 data/week-<日期>）」。
+5. 推到 main 後，GitHub Actions 會再驗證、測試，約 2–3 分鐘後自動部署網站：https://jason930930.github.io/econ-archipelago/
+6. 另送一則簡短 SendUserMessage：「世界更新：已推送，部署中（網址）」或「世界更新：失敗（原因；分支 data/week-<日期>）」。
+   `npm run validate` 與 CI 的資料檢查規則相同；通過驗證的週檔不會因資料問題卡住部署。
 
 ## 2. 檔案結構
 

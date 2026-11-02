@@ -68,6 +68,14 @@ describe('renderEntityPanel', () => {
     const panel = renderEntityPanel('crypto', weeks[0]!, buildIndex([weeks[0]!]));
     expect(panel.textContent).toContain('無資料');
   });
+  test('shows the indicator note so differing periods are visible', () => {
+    const panel = renderEntityPanel('tw-twse', latest, index);
+    expect(panel.querySelector('.indicator-note')?.textContent).toBe('10/30 單日漲跌');
+  });
+  test('marks indicators with a source range as discrepant', () => {
+    expect(renderEntityPanel('me-oil', latest, index).querySelector('.indicator.has-range')).not.toBeNull();
+    expect(renderEntityPanel('tw-twse', latest, index).querySelector('.indicator.has-range')).toBeNull();
+  });
   test('entity without indicator has no chart', () => {
     expect(renderEntityPanel('kr-memory', latest, index).querySelector('svg')).toBeNull();
   });

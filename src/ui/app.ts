@@ -1,7 +1,7 @@
 import type { ArchiveIndex } from '../data/buildIndex';
 import type { WeekData, WeekEvent } from '../data/types';
 import { createWorld, supportsWebGL, type ColorMode, type WorldView } from '../render/world';
-import { buildSteps, orderEvents, type Step } from '../story/order';
+import { buildSteps, orderEvents, outgoingLinks, type Step } from '../story/order';
 import { initialPlayer, playerReducer, stepDuration, type PlayerAction, type PlayerState } from '../story/player';
 import { getEntity, type EntityId } from '../world/entities';
 import { primaryIndicator } from '../world/entityIndicators';
@@ -77,7 +77,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
   let player: PlayerState = initialPlayer([]);
   let storyline: string | null = null;
   let runToken = 0;
+  let navSeq = 0;
   let world: WorldView | null = null;
+  let webglOk = webgl;
 
   // ---------- 版面 ----------
   const weekTitle = el('p', { class: 'week-title' });
@@ -226,9 +228,20 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // ---------- 世界 ----------
   function ensureWorld(): WorldView | null {
-    if (textMode || !webgl) return null;
+    if (textMode || !webglOk) return null;
     if (world) return world;
-    world = createWorld(canvas);
+    try {
+      world = createWorld(canvas);
+    } catch {
+      // 偵測通過但實際建立失敗（驅動、記憶體等）：改用文字模式，內容不受影響。
+      webglOk = false;
+      textMode = true;
+      textBtn.disabled = true;
+      textBtn.title = '無法啟動 3D 畫面，只能使用文字模式';
+      syncChrome();
+      renderText(null);
+      return null;
+    }
     world.setColorMode(colorMode);
     world.setLowPower(window.matchMedia('(pointer: coarse)').matches || isNarrow());
     world.setTimeScale(fast ? 0.05 : 1 / player.speed);
@@ -247,6 +260,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       const key = primaryIndicator(id);
       const r = key ? index.indicators[week.weekId]?.[key] : undefined;
       tooltip.replaceChildren(el('strong', {}, getEntity(id).name), key && r ? formatIndicator(key, r) : getEntity(id).covers);
+      if (key && r?.note) tooltip.append(el('div', { class: 'indicator-note' }, r.note));
       tooltip.style.left = `${Math.min(pos.x + 14, window.innerWidth - 270)}px`;
       tooltip.style.top = `${pos.y + 14}px`;
       tooltip.hidden = false;
@@ -279,13 +293,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
           await w.effects.ripple(ev.taiwanImpact.direction, ev.taiwanImpact.summary);
           if (token !== runToken) return;
         }
-        const nxt = player.steps[player.index + 1];
-        if (nxt?.kind === 'event') {
-          const link = week.links.find((l) => l.from === ev.id && l.to === nxt.eventId);
-          const target = eventById(nxt.eventId)!;
-          if (link) await w.effects.flow(ev.primaryEntity, target.primaryEntity, link.label);
-          if (token !== runToken) return;
-        }
+        const flows = outgoingLinks(week, ev.id).map((l) => w.effects.flow(ev.primaryEntity, eventById(l.to)!.primaryEntity, l.label));
+        await Promise.all(flows);
+        if (token !== runToken) return;
       }
     } else {
       showPanel(finalePanel());
@@ -351,13 +361,18 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // ---------- 切週 ----------
   async function goWeek(weekId: string, eventId: string | null, invalid = false) {
+    const nav = ++navSeq;
+    runToken++;
+    if (player.playing) dispatch({ type: 'pause' });
     let next: WeekData;
     try {
       next = await loadWeek(weekId);
     } catch {
-      toast('這一週的資料載入失敗');
+      if (nav === navSeq) toast('這一週的資料載入失敗');
       return;
     }
+    // 只採用最後一次導覽的結果，較慢回來的舊請求直接丟棄。
+    if (nav !== navSeq) return;
     const first = !week;
     const changed = first || next.weekId !== week.weekId;
     runToken++;
@@ -397,7 +412,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // ---------- 事件繫結 ----------
   textBtn.addEventListener('click', () => {
-    if (!webgl) return;
+    if (!webglOk) return;
     textMode = !textMode;
     writePref(TEXT_KEY, textMode ? '1' : '0');
     pause();
@@ -407,7 +422,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
     renderText(focusId);
     if (!textMode) {
       const w = ensureWorld();
-      w?.setParams(paramsFor(week));
+      if (w) {
+        w.effects.clear();
+        w.highlight([]);
+        w.setParams(paramsFor(week));
+        void w.resetCamera(0);
+      }
+      player = initialPlayer(steps, player.speed);
+      syncControls();
+      setHash(null);
       if (!isNarrow()) showPanel(introPanel());
     }
   });

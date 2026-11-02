@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { buildSteps, orderEvents } from '../../src/story/order';
+import { buildSteps, orderEvents, outgoingLinks } from '../../src/story/order';
 import type { CausalLink } from '../../src/data/types';
 import { makeEvent, makeWeek } from './helpers';
 
@@ -35,4 +35,15 @@ test('buildSteps appends finale', () => {
   expect(steps).toHaveLength(6);
   expect(steps[5]).toEqual({ kind: 'finale' });
   expect(steps[0]).toEqual({ kind: 'event', eventId: 'e1' });
+});
+
+test('outgoingLinks returns every link leaving the event, not just to the next step', () => {
+  const w = week([L('e3', 'e5'), L('e5', 'e2'), L('e5', 'e1'), L('e1', 'e4')]);
+  expect(outgoingLinks(w, 'e5').map((l) => l.to)).toEqual(['e2', 'e1']);
+  expect(outgoingLinks(w, 'e1').map((l) => l.to)).toEqual(['e4']);
+  expect(outgoingLinks(w, 'e4')).toEqual([]);
+});
+
+test('outgoingLinks ignores self links and unknown targets', () => {
+  expect(outgoingLinks(week([L('e1', 'e1'), L('e1', 'e9')]), 'e1')).toEqual([]);
 });

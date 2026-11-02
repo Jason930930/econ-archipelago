@@ -36,6 +36,14 @@ describe('validateWeek', () => {
   test('http url rejected', () => expectError((w) => { w.events[0].sources[0].url = 'http://x.com'; }, '/events/0/sources/0/url'));
   test('google redirect url rejected', () => expectError((w) => { w.events[0].sources[0].url = 'https://www.google.com/url?q=https://x.com'; }, '/events/0/sources/0/url'));
   test('undefined storyline rejected', () => expectError((w) => { w.events[1].storylines = ['hormuz-tension']; }, '/events/1/storylines/0'));
+  test('weekId must be a Friday', () => {
+    const w = base();
+    w.weekId = '2026-10-29'; w.period = { start: '2026-10-23', end: '2026-10-29' };
+    const errs = validateWeek(w, '2026-10-29.json', none);
+    expect(errs.some((e) => e.path === '/weekId' && e.message.includes('週五'))).toBe(true);
+  });
+  test('impossible calendar date rejected', () => expectError((w) => { w.events[0].date = '2026-02-30'; }, '/events/0/date'));
+  test('watchlist impossible date rejected', () => expectError((w) => { w.watchlist[0].date = '2026-13-01'; }, '/watchlist/0/date'));
   test('missing indicator keys allowed', () => {
     const w = base();
     w.indicators = {};

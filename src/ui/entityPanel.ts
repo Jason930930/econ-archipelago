@@ -52,8 +52,10 @@ export function renderEntityPanel(id: EntityId, week: WeekData, index: ArchiveIn
   for (const key of keys) {
     const series = weeks.map((w) => ({ weekId: w.weekId, r: index.indicators[w.weekId]![key] }));
     const now = index.indicators[week.weekId]?.[key];
-    panel.append(el('div', { class: 'indicator' },
+    const cls = now?.range && now.status === 'fresh' ? 'indicator has-range' : 'indicator';
+    panel.append(el('div', { class: cls },
       el('div', { class: 'indicator-head' }, el('span', {}, INDICATOR_LABELS[key]), el('strong', {}, now ? formatIndicator(key, now) : '無資料')),
+      now?.note ? el('p', { class: 'indicator-note' }, now.note) : null,
       sparkline(series),
     ));
   }

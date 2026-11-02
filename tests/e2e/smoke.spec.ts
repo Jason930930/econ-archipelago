@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { latest, noWebGL } from './helpers';
 
 const DISCLAIMER = '僅為資訊整理，不構成任何買賣或個人化投資建議。';
 
-test('loads world', async ({ page }) => {
+test('loads world', async ({ page, request }) => {
+  const w = await latest(request);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('./');
@@ -12,7 +14,7 @@ test('loads world', async ({ page }) => {
   expect(box!.width).toBeGreaterThan(0);
   expect(box!.height).toBeGreaterThan(0);
   await expect(page.locator('.disclaimer')).toHaveText(DISCLAIMER);
-  await expect(page.locator('.week-title')).toContainText('2026/10/24');
+  await expect(page.locator('.week-title')).toHaveText(w.title);
   expect(errors).toEqual([]);
 });
 
@@ -36,10 +38,11 @@ test('deep link', async ({ page }) => {
   await expect(page.locator('.panel .event-card h3')).toHaveText('荷莫茲海峽緊張，油價維持高檔、黃金跌破 4,000 美元');
 });
 
-test('invalid deep link', async ({ page }) => {
+test('invalid deep link', async ({ page, request }) => {
+  const w = await latest(request);
   await page.goto('./#/2099-01-01/e1');
   await expect(page.locator('.toast')).toContainText('找不到該連結');
-  await expect(page.locator('.week-title')).toContainText('2026/10/24');
+  await expect(page.locator('.week-title')).toHaveText(w.title);
 });
 
 test('storyline jump opens the event in its week', async ({ page }) => {
@@ -49,17 +52,11 @@ test('storyline jump opens the event in its week', async ({ page }) => {
   await expect(page.locator('.panel .event-card')).toBeVisible();
 });
 
-test('falls back to text mode without WebGL', async ({ page }) => {
-  await page.addInitScript(() => {
-    const proto = HTMLCanvasElement.prototype as unknown as { getContext: (type: string, ...rest: unknown[]) => unknown };
-    const orig = proto.getContext;
-    proto.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
-      if (/webgl/.test(type)) return null;
-      return orig.call(this, type, ...rest);
-    };
-  });
+test('falls back to text mode without WebGL', async ({ page, request }) => {
+  const w = await latest(request);
+  await noWebGL(page);
   await page.goto('./');
-  await expect(page.locator('.text-mode .event-card')).toHaveCount(5);
+  await expect(page.locator('.text-mode .event-card')).toHaveCount(w.eventCount);
   await expect(page.locator('.stage')).toBeHidden();
   await expect(page.locator('[data-action=text-mode]')).toBeDisabled();
 });

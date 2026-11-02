@@ -10,6 +10,16 @@ export interface ValidationError {
 }
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
+
+/** 是否為真實存在的日曆日期（排除 2026-02-30 這類）。 */
+function isRealDate(iso: string): boolean {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso;
+}
+
+function isFriday(iso: string): boolean {
+  return new Date(`${iso}T00:00:00Z`).getUTCDay() === 5;
+}
 const checkSchema = ajv.compile(schema);
 
 export function validateWeek(raw: unknown, fileName: string, knownStorylines: ReadonlySet<string>): ValidationError[] {
@@ -25,6 +35,14 @@ export function validateWeek(raw: unknown, fileName: string, knownStorylines: Re
   const w = raw as unknown as WeekData;
   const out: ValidationError[] = [];
   const expectedId = fileName.replace(/\.json$/, '');
+
+  const dates: [string, string | null][] = [
+    ['/weekId', w.weekId], ['/period/start', w.period.start], ['/period/end', w.period.end],
+    ...w.events.map((e, i): [string, string | null] => [`/events/${i}/date`, e.date]),
+    ...w.watchlist.map((x, i): [string, string | null] => [`/watchlist/${i}/date`, x.date]),
+  ];
+  for (const [path, d] of dates) if (d !== null && !isRealDate(d)) out.push(err(path, `「${d}」不是真實存在的日期`));
+  if (isRealDate(w.weekId) && !isFriday(w.weekId)) out.push(err('/weekId', `weekId「${w.weekId}」必須是週五`));
 
   if (w.weekId !== expectedId) out.push(err('/weekId', `weekId「${w.weekId}」必須等於檔名「${expectedId}」`));
   if (w.period.end !== w.weekId) out.push(err('/period/end', 'period.end 必須等於 weekId（週五日期）'));

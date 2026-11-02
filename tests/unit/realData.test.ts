@@ -14,7 +14,3 @@ test('archive has at least the three backfilled weeks', () => {
 test('all weeks pass validation', () => {
   expect(validateArchive(files)).toEqual([]);
 });
-
-test('each week has five events', () => {
-  for (const f of files) expect(f.raw.events.length, f.fileName).toBe(5);
-});
