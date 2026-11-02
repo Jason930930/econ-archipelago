@@ -165,6 +165,7 @@
 | `storylines` | 主線 id 陣列，可為空 |
 | `metrics` | `[{ "label", "value", "change"? }]`，關鍵數字，皆為字串 |
 | `sources` | `[{ "title", "url" }]`，至少 1 個；url 必須是 `https://` 原始網址 |
+| `channels` | 選填：本則事件內點亮的精選管道 id（見第 11 節）；和 `taiwanImpact.channels` 不同，不可填中文 |
 
 `taiwanImpact` 格式：`{ "summary": "一句話改寫週報的台灣影響", "direction": -1 | 0 | 1, "channels": ["半導體", "台股", "匯率", …] }`；direction：對台灣市場偏負面 -1、中性 0、偏正面 +1。
 
@@ -682,6 +683,7 @@
 - **只在週報原文明寫了這條因果時才標註**，不要因為「理論上會影響」就標。
 - 優先標在因果連線上：`links[]` 加 `"channel": "<管道 id>"`。
 - 只有單一事件內的傳導（例如「台積電法說後股價收黑、台股週跌」）才標在事件上：`events[].channels: ["<管道 id>"]`，同一則事件不可重複。
+- **`events[].channels` 只能填精選管道 id**（下表第一欄，例如 `tsmc-to-tw-equity`）。`taiwanImpact.channels` 才是「半導體」「台股」這類中文描述，兩者不要混用。
 - 「碰到」的定義：事件的某個 place `p` 與管道節點路徑 `n` 滿足「`p` 在 `n` 之下」或「`n` 在 `p` 之下」（含相等）。例：`us/tech/meta` 碰到 `us/tech`，`us/central-bank` 碰到 `us`。
 - 連線上的 `channel`：起點事件必須有 place 碰到管道起點，終點事件必須有 place 碰到管道終點。
 - 事件上的 `channels`：事件必須有 place 碰到管道的起點或終點。
@@ -758,3 +760,4 @@
 - `sign`：`1` 同向、`-1` 反向。
 - `mechanism`：一句話說明機制，用週報的說法，不可為空。
 - `evidence`：本週的事件 id（至少一個），每個事件的 place 都要碰到 `fromPath` 或 `toPath`。
+- 提議被收錄後（精選清單會用同一個 id 與兩端），舊週檔裡的提議保持原樣即可；之後的週直接用該管道標註，不要再提議。

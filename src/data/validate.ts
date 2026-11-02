@@ -141,14 +141,17 @@ export function validateWeek(raw: unknown, fileName: string, ctx: ValidateContex
     if (propIds.has(pc.id)) out.push(err(`${p}/id`, `提議 id「${pc.id}」在本週重複`));
     propIds.add(pc.id);
     if (!PATH_SEGMENT.test(pc.id)) out.push(err(`${p}/id`, `提議 id「${pc.id}」必須是小寫英文、數字與連字號`));
-    if (isChannelId(pc.id)) out.push(err(`${p}/id`, `「${pc.id}」已是精選管道，請改用 links[].channel 或 events[].channels`));
+    // 已收錄：精選管道沿用提議的 id 與兩端。較早週的提議保持原樣，不算錯。
+    const core = getChannel(pc.id);
+    const promoted = !!core && getChannelNode(core.from).path === pc.fromPath && getChannelNode(core.to).path === pc.toPath;
+    if (core && !promoted) out.push(err(`${p}/id`, `「${pc.id}」已是精選管道，請改用 links[].channel 或 events[].channels`));
     const rFrom = resolvePath(pc.fromPath, entities);
     if (!rFrom.ok) out.push(err(`${p}/fromPath`, rFrom.reason));
     const rTo = resolvePath(pc.toPath, entities);
     if (!rTo.ok) out.push(err(`${p}/toPath`, rTo.reason));
     if (pc.fromPath === pc.toPath) out.push(err(`${p}/toPath`, 'fromPath 與 toPath 不可相同'));
     for (const f of ['fromVar', 'toVar', 'mechanism'] as const) if (pc[f].trim() === '') out.push(err(`${p}/${f}`, `${f} 不可為空`));
-    const dup = CHANNELS.filter((c) => getChannelNode(c.from).path === pc.fromPath && getChannelNode(c.to).path === pc.toPath).map((c) => c.id);
+    const dup = CHANNELS.filter((c) => c.id !== pc.id && getChannelNode(c.from).path === pc.fromPath && getChannelNode(c.to).path === pc.toPath).map((c) => c.id);
     if (dup.length > 0) out.push(err(p, `這組起點與終點已有精選管道：${dup.join('、')}，請改用精選管道`));
     pc.evidence.forEach((eid, j) => {
       const ev = byId.get(eid);

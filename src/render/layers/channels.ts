@@ -2,13 +2,10 @@ import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { isLit, type ChannelActivity, type ProposalSummary } from '../../world/activation';
 import { CHANNELS, FAMILY_INFO, getChannelNode, type Channel } from '../../world/channels';
-import { laneIndexesByPath, routeControls, sameRegion } from '../channelRoute';
+import { ENDPOINT_Y, laneIndexesByPath, routeControls, sameRegion } from '../channelRoute';
 import type { WorldGraph } from '../graph';
-import { ISLAND_TOP_Y } from './islandTerrain';
 import { makeLabel } from './labels';
 
-/** 管線端點高度：略高於島面，讓管線從區塊冒出來。 */
-const END_Y = ISLAND_TOP_Y + 0.2;
 const DARK_OPACITY = 0.12;
 const DARK_RADIUS = 0.06;
 const DOTS = 6;
@@ -52,9 +49,9 @@ function curveBetween(graph: WorldGraph, from: string, to: string, lane: number)
   if (!a || !b) return null;
   const r = routeControls(a, b, lane, sameRegion(from, to));
   return new THREE.QuadraticBezierCurve3(
-    new THREE.Vector3(r.start[0], END_Y, r.start[1]),
+    new THREE.Vector3(r.start[0], ENDPOINT_Y, r.start[1]),
     new THREE.Vector3(...r.mid),
-    new THREE.Vector3(r.end[0], END_Y, r.end[1]),
+    new THREE.Vector3(r.end[0], ENDPOINT_Y, r.end[1]),
   );
 }
 

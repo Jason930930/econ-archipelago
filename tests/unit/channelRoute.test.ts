@@ -1,13 +1,17 @@
 import { describe, expect, test } from 'vitest';
-import { laneIndexes, routeControls, sameRegion, LANE_GAP } from '../../src/render/channelRoute';
+import { ARCH_Y, ENDPOINT_Y, laneIndexes, routeControls, sameRegion, LANE_GAP } from '../../src/render/channelRoute';
 import { CHANNELS, type Channel } from '../../src/world/channels';
+
+/** 二次貝茲曲線在 t = 0.5 的實際高度（兩端高度為 ENDPOINT_Y）。 */
+const apex = (controlY: number) => 0.5 * ENDPOINT_Y + 0.5 * controlY;
 
 const ch = (id: string, from: string, to: string): Channel => ({ id, from, to, sign: 1, strength: 1, lag: 'days', family: 'markets', mechanism: 'm' });
 
 describe('sameRegion', () => {
   test('arch within one region', () => {
     expect(sameRegion('us/central-bank', 'us/bonds')).toBe(true);
-    expect(routeControls([0, 0], [3, 0], 0, true).mid[1]).toBe(2.5);
+    expect(ARCH_Y).toBe(2.5);
+    expect(apex(routeControls([0, 0], [3, 0], 0, true).mid[1])).toBeCloseTo(2.5);
   });
   test('sea route across regions', () => {
     expect(sameRegion('us/equity', 'tw/equity')).toBe(false);
@@ -28,7 +32,7 @@ describe('sameRegion', () => {
   test('coincident endpoints become a visible loop', () => {
     const r = routeControls([5, 5], [5, 5], 0, true);
     expect(Math.hypot(r.start[0] - r.end[0], r.start[1] - r.end[1])).toBeGreaterThan(0.5);
-    expect(r.mid[1]).toBe(2.5);
+    expect(apex(r.mid[1])).toBeCloseTo(2.5);
   });
 });
 

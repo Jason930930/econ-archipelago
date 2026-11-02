@@ -51,6 +51,16 @@ describe('validateWeek', () => {
   test('event channel must touch an end', () => expectError((w) => { w.events[1].channels = ['tsmc-to-tw-equity']; }, '/events/1/channels/0'));
   test('duplicate event channel', () => expectError((w) => { w.events[0].channels = ['ai-capex-to-tw-semis', 'ai-capex-to-tw-semis']; }, '/events/0/channels'));
   test('proposal id clashes with core channel', () => expectError((w) => { w.proposedChannels[0].id = 'oil-to-us-inflation'; }, '/proposedChannels/0/id'));
+  test('promoted proposal (same id and paths as a core channel) still validates', () => {
+    const w = base(); Object.assign(w.proposedChannels[0], { id: 'fed-to-us-yield', fromPath: 'us/central-bank', toPath: 'us/bonds' });
+    w.events[0].places.push('us/central-bank');
+    expect(validateWeek(w, FILE, ctx)).toEqual([]);
+  });
+  test('proposal reusing a core id with different paths is still rejected', () => {
+    const w = base(); Object.assign(w.proposedChannels[0], { id: 'fed-to-us-yield' });
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/proposedChannels/0/id'), JSON.stringify(errs)).toBe(true);
+  });
   test('proposal duplicates a core pair', () => {
     const w = base(); Object.assign(w.proposedChannels[0], { fromPath: 'us/central-bank', toPath: 'us/bonds' });
     w.events[0].places.push('us/central-bank');

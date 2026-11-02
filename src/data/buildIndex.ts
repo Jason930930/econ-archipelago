@@ -49,6 +49,8 @@ export function buildIndex(weeks: WeekData[], seed: EntityRecord[]): ArchiveInde
       reference(place);
     }
     for (const x of w.watchlist) x.places.forEach(reference);
+    // 提議管道的兩端也要有區塊，否則虛線會接到島心。
+    for (const pc of w.proposedChannels ?? []) [pc.fromPath, pc.toPath].forEach(reference);
   }
   for (const e of entities) referenced.get(e.region)?.add(e.sector);
   // 傳導管道的端點區塊一定要畫出來，否則管線會接到島心。

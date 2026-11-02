@@ -4,8 +4,10 @@ import { getChannelNode, type Channel } from '../world/channels';
 
 /** 跨地區管線中點的高度（貼近海面）。 */
 export const SEA_Y = 0.15;
-/** 同地區管線拱頂的高度。 */
+/** 同地區管線拱頂（曲線最高點）的高度。 */
 export const ARCH_Y = 2.5;
+/** 管線端點高度：島面（0.4）再高 0.2，讓管線從區塊冒出來。 */
+export const ENDPOINT_Y = 0.6;
 /** 同一對地區之間，每多一條管道往側邊錯開的距離。 */
 export const LANE_GAP = 1.2;
 /** 跨地區弧度：距離 × 此係數。 */
@@ -41,7 +43,9 @@ export function routeControls(a: XZ, b: XZ, laneIndex: number, same: boolean): {
   const cx = (start[0] + end[0]) / 2, cz = (start[1] + end[1]) / 2;
   if (same) {
     const off = laneIndex * 0.5;
-    return { start, end, mid: [cx + nx * off, ARCH_Y + laneIndex * 0.35, cz + nz * off] };
+    // 二次貝茲曲線在 t = 0.5 的高度 = (端點 + 控制點) / 2，所以控制點要放在 2·拱頂 − 端點。
+    const apex = ARCH_Y + laneIndex * 0.35;
+    return { start, end, mid: [cx + nx * off, 2 * apex - ENDPOINT_Y, cz + nz * off] };
   }
   const off = len * BOW + laneIndex * LANE_GAP;
   return { start, end, mid: [cx + nx * off, SEA_Y, cz + nz * off] };

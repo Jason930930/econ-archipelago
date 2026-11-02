@@ -24,3 +24,8 @@ test.each(CHANNELS.map((c) => c.id))('guide lists channel %s', (id) => expect(gu
 test('guide covers channel tagging and proposals', () => {
   for (const s of ['proposedChannels', 'fromVar', 'toVar', 'evidence', '碰到', '`channel`', '`channels`', '不填強度']) expect(guide, s).toContain(s);
 });
+
+test('guide separates events[].channels from taiwanImpact.channels', () => {
+  expect(guide).toContain('| `channels` | 選填：本則事件內點亮的精選管道 id（見第 11 節）');
+  expect(guide).toContain('`events[].channels` 只能填精選管道 id');
+});

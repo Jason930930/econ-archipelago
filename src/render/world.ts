@@ -11,6 +11,7 @@ import { createEffects, type Effects } from './effects';
 import { createGauge, type Gauge, type GaugeHost } from './gauges';
 import { buildShipping } from './layers/shipping';
 import { createChannelLayer } from './layers/channels';
+import { createPickRaycaster } from './pick';
 import type { ChannelActivity, ProposalSummary } from '../world/activation';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
 import { buildDistrict, type DistrictNode } from './layers/district';
@@ -279,7 +280,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
   });
 
   // 拾取：沿父節點往上找第一個標了 path 的物件，因此回傳的是最深一層。
-  const raycaster = new THREE.Raycaster();
+  const raycaster = createPickRaycaster();
   const ndc = new THREE.Vector2();
   function pickAt(clientX: number, clientY: number): PickHit | null {
     const rect = canvas.getBoundingClientRect();
