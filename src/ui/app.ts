@@ -250,8 +250,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     world.setLowPower(window.matchMedia('(pointer: coarse)').matches || isNarrow());
     world.setTimeScale(fast ? 0.05 : 1 / player.speed);
     queueMicrotask(syncInsets);
-    world.onPick((path) => {
-      if (path) selectNode(path);
+    world.onPick((hit) => {
+      if (hit?.kind === 'node') selectNode(hit.path);
     });
     world.onHover((path, pos) => {
       if (!path) {

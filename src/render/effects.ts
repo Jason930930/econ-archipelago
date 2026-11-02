@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { getChannel, getChannelNode } from '../world/channels';
 import { UP_DOWN } from './colors';
 import type { WorldGraph } from './graph';
 import type { ColorMode, Stage } from './scene';
@@ -9,6 +10,8 @@ export interface Effects {
   pulse(path: string, sentiment: number): Promise<void>;
   /** 粒子沿弧線從 from 流到 to（約 2s），弧頂顯示 label；from === to 時改為原地環狀脈衝。 */
   flow(fromPath: string, toPath: string, label: string): Promise<void>;
+  /** 粒子沿某條傳導管線流動（約 2s）並讓管線短暫加亮；找不到管線時退回 flow。 */
+  flowAlong(channelId: string, label: string): Promise<void>;
   /** 從目前焦點擴散到台灣證交所，顏色依 direction 與配色模式，並顯示摘要。 */
   ripple(direction: -1 | 0 | 1, summary: string): Promise<void>;
   /** 終幕：在對應地標插上旗幟；未確認者加「未確認」。 */
@@ -22,6 +25,9 @@ export interface EffectsCtx {
   graph: WorldGraph;
   colorMode(): ColorMode;
   focus(): string | null;
+  /** 傳導管線的曲線；沒有管線層或找不到時回傳 null。 */
+  channelCurve?(id: string): THREE.Curve<THREE.Vector3> | null;
+  flashChannel?(id: string, ms: number): void;
 }
 
 const NEGATIVE = new THREE.Color('#ff5b3a');
@@ -137,11 +143,19 @@ export function createEffects(ctx: EffectsCtx): Effects {
     arc.computeLineDistances();
     root.add(arc);
 
+    await particles(curve, text);
+    if (gen !== generation) return;
+    (arc.material as THREE.LineDashedMaterial).opacity = 0.4;
+  }
+
+  /** 粒子沿 curve 從起點流到終點（2s），curve 中點上方顯示 text。 */
+  async function particles(curve: THREE.Curve<THREE.Vector3>, text: string): Promise<void> {
     const n = stage.lowPower ? 12 : 40;
     const geo = new THREE.BufferGeometry();
     const arr = new Float32Array(n * 3);
     geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
     const points = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#ffd166', size: 8, sizeAttenuation: false, transparent: true, opacity: 1, depthWrite: false }));
+    points.frustumCulled = false;
     root.add(points);
 
     const tag = label([text], 'fx-flow');
@@ -159,8 +173,17 @@ export function createEffects(ctx: EffectsCtx): Effects {
       (points.material as THREE.PointsMaterial).opacity = k < 0.9 ? 1 : (1 - k) * 10;
     });
     remove(points);
-    if (gen !== generation) return;
-    (arc.material as THREE.LineDashedMaterial).opacity = 0.4;
+  }
+
+  async function flowAlong(channelId: string, text: string): Promise<void> {
+    const curve = ctx.channelCurve?.(channelId) ?? null;
+    if (!curve) {
+      const c = getChannel(channelId);
+      if (c) await flow(getChannelNode(c.from).path, getChannelNode(c.to).path, text);
+      return;
+    }
+    ctx.flashChannel?.(channelId, 2600);
+    await particles(curve, text);
   }
 
   async function ripple(direction: -1 | 0 | 1, summary: string): Promise<void> {
@@ -237,5 +260,5 @@ export function createEffects(ctx: EffectsCtx): Effects {
     rippleTags = [];
   }
 
-  return { pulse, flow, ripple, showFlags, clear };
+  return { pulse, flow, flowAlong, ripple, showFlags, clear };
 }
