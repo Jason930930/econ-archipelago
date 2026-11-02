@@ -186,7 +186,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     let label = '尚未開始';
     if (cur?.kind === 'event') label = `第 ${player.index + 1} / ${steps.length - 1} 則：${eventById(cur.eventId)?.title ?? ''}`;
     if (cur?.kind === 'finale') label = '終幕：下週值得關注';
-    controls.update({ playing: player.playing, speed: player.speed, label, canPrev: player.index > 0, canNext: player.index < steps.length - 1 });
+    controls.update({ playing: player.playing, speed: player.speed, label, canPlay: steps.length > 0, canPrev: player.index > 0, canNext: player.index < steps.length - 1 });
   }
 
   function syncTimeline() {
@@ -317,6 +317,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function play() {
+    if (steps.length === 0) return;
     const restart = player.index < 0 || player.index >= steps.length - 1;
     dispatch({ type: 'play' });
     const token = ++runToken;
@@ -330,6 +331,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function step(a: PlayerAction) {
+    if (steps.length === 0) return;
     const wasPlaying = player.playing;
     dispatch(a);
     const token = ++runToken;
@@ -385,6 +387,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     syncChrome();
     syncControls();
     syncTimeline();
+    // 底部列內容剛被我們改變，立刻同步尺寸，不等 ResizeObserver 下一幀才通知。
+    syncInsets();
     if (invalid) toast('找不到該連結，已回到最新一週');
 
     const w = ensureWorld();

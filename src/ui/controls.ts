@@ -10,13 +10,14 @@ export interface ControlHandlers {
 
 export interface ControlsView {
   root: HTMLElement;
-  update(s: { playing: boolean; speed: 1 | 2; label: string; canPrev: boolean; canNext: boolean }): void;
+  update(s: { playing: boolean; speed: 1 | 2; label: string; canPlay: boolean; canPrev: boolean; canNext: boolean }): void;
 }
 
 export function createControls(h: ControlHandlers): ControlsView {
-  const play = el('button', { type: 'button', class: 'btn', 'data-action': 'play' }, '▶ 播放');
-  const prev = el('button', { type: 'button', class: 'btn', 'data-action': 'prev', 'aria-label': '上一則' }, '⏮');
-  const next = el('button', { type: 'button', class: 'btn', 'data-action': 'next', 'aria-label': '下一則' }, '⏭');
+  // 資料載入完成前停用，避免點擊被之後的初始化吞掉。
+  const play = el('button', { type: 'button', class: 'btn', 'data-action': 'play', disabled: '' }, '▶ 播放');
+  const prev = el('button', { type: 'button', class: 'btn', 'data-action': 'prev', 'aria-label': '上一則', disabled: '' }, '⏮');
+  const next = el('button', { type: 'button', class: 'btn', 'data-action': 'next', 'aria-label': '下一則', disabled: '' }, '⏭');
   const speed = el('button', { type: 'button', class: 'btn', 'data-action': 'speed', 'aria-label': '播放速度' }, '1×');
   const reset = el('button', { type: 'button', class: 'btn', 'data-action': 'reset-camera' }, '⟲ 鏡頭');
   const label = el('span', { class: 'step-label', 'aria-live': 'polite' });
@@ -31,6 +32,7 @@ export function createControls(h: ControlHandlers): ControlsView {
     update(s) {
       play.textContent = s.playing ? '⏸ 暫停' : '▶ 播放';
       play.setAttribute('aria-pressed', String(s.playing));
+      play.disabled = !s.canPlay;
       speed.textContent = `${s.speed}×`;
       prev.disabled = !s.canPrev;
       next.disabled = !s.canNext;

@@ -81,3 +81,13 @@ test('leaving text mode clears the previous week\'s effects', async ({ page }) =
   await page.locator('[data-action=text-mode]').click();
   await expect(page.locator('.fx-label')).toHaveCount(0);
 });
+
+test('pressing play while the week is still loading is not swallowed', async ({ page }) => {
+  await page.route('**/data/weeks/2026-10-30.json', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  });
+  await page.goto('./?fast=1#/2026-10-30');
+  await page.locator('[data-action=play]').click();
+  await expect(page.locator('.panel .finale')).toBeVisible({ timeout: 30_000 });
+});
