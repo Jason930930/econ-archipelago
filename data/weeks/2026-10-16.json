@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "weekId": "2026-10-16",
+  "period": { "start": "2026-10-10", "end": "2026-10-16" },
+  "title": "財金週報（2026/10/10–2026/10/16）【測試寄送】",
+  "indicators": {
+    "brent": { "value": 109.86, "unit": "USD/bbl", "changePct": null, "note": "12 月合約 10/16 收盤；盤中一度達 110 美元" },
+    "wti": { "value": 101.41, "unit": "USD/bbl", "changePct": 10.4, "note": "11 月合約；週漲幅" },
+    "fedFunds": { "value": 4.0, "range": [3.75, 4.0], "unit": "%", "note": "9 月升息後區間 3.75%–4%，取上緣" },
+    "us10y": { "value": 5.09, "unit": "%", "changePct": null, "note": "週內由約 5.24% 降至約 5.09%" },
+    "sp500": { "value": 7659.44, "changePct": -2.1, "note": "週跌幅（Babypips 統計）；10/16 單日 -1.09%" },
+    "nasdaq": { "value": 26140.03, "changePct": -2.14, "note": "10/16 單日漲跌" },
+    "dow": { "value": 52002.41, "changePct": -0.34, "note": "10/16 單日漲跌" },
+    "taiex": { "value": 47111.26, "changePct": -4.47, "note": "全週跌 2,202 點，週跌幅依此自行換算" },
+    "cpiYoY": { "value": 3.7, "unit": "%", "note": "9 月 CPI，10/14 公布" },
+    "gold": { "value": 4167, "unit": "USD/oz", "changePct": -0.5, "note": "週跌幅" },
+    "usdtwd": { "value": 32.338, "changePct": 1.43, "note": "新台幣週貶約 1.43%（MoneyDJ 標題為 1.45%）" }
+  },
+  "events": [
+    {
+      "id": "e1", "rank": 1, "date": "2026-10-16",
+      "title": "油價飆破百元：WTI 週漲逾 10%，Brent 一度觸及 110 美元",
+      "what": "10/16 WTI 11 月合約收 101.41 美元，單週約漲 10.4%；Brent 12 月合約收 109.86 美元，盤中一度達 110 美元，為 5 月以來高點。推手包括伊朗對航運的攻擊、沙烏地主導聯軍攔截飛向紅海出口港 Yanbu 的彈道飛彈，以及烏克蘭打擊俄羅斯 Ryazan 煉油廠。美國原油庫存單週減少 860 萬桶，IEA 與美國釋出的緊急儲備未能壓住漲勢。",
+      "why": "能源價格直接推升通膨與運輸成本，是本週通膨數據、Fed 預期與市場風險情緒的共同源頭。",
+      "discrepancy": null,
+      "taiwanImpact": null,
+      "primaryEntity": "me-oil", "entities": ["me-oil"],
+      "sentiment": -2, "storylines": ["mideast-energy"],
+      "metrics": [
+        { "label": "WTI", "value": "101.41 美元", "change": "週 +10.4%" },
+        { "label": "Brent", "value": "109.86 美元" },
+        { "label": "美國原油庫存", "value": "-860 萬桶", "change": "單週" }
+      ],
+      "sources": [
+        { "title": "EnergyNow", "url": "https://energynow.com/2026/10/oil-surges-as-middle-east-supply-fears-push-brent-near-110-and-wti-above-100-both-post-strong-weekly-gains/" },
+        { "title": "CNBC", "url": "https://www.cnbc.com/2026/10/16/oil-price-today-iran-strait-hormuz-ukraine-russia.html" }
+      ]
+    },
+    {
+      "id": "e2", "rank": 2, "date": "2026-10-14",
+      "title": "美國 9 月 CPI 升至 3.7%，Fed 升息預期反覆",
+      "what": "10/14 公布的 9 月 CPI 年增 3.7%（8 月 3.4%，市場預期 3.6%）；核心 CPI 年增 2.6%（前值 2.4%，預期 2.5%）。汽油月增 9.1%，年增 34.2%。Fed 9 月已升息至 3.75%–4%，下次會議為 10/27–28。",
+      "why": "核心通膨也走高，顯示物價壓力正由能源擴散，使利率路徑更不確定。",
+      "discrepancy": "CPI 公布後 Capital Economics 引述市場對 10 月升息機率約 50%（前值 20%）；Schwab 10/16 則指約 17%（先前約 45%），年底前升息機率仍逾 90%。兩者時點與口徑不同。",
+      "taiwanImpact": null,
+      "primaryEntity": "us-fed", "entities": ["us-fed"],
+      "sentiment": -1, "storylines": ["fed-hiking-cycle"],
+      "metrics": [
+        { "label": "CPI 年增", "value": "3.7%", "change": "前值 3.4%" },
+        { "label": "核心 CPI 年增", "value": "2.6%", "change": "前值 2.4%" },
+        { "label": "汽油", "value": "月增 9.1%", "change": "年增 34.2%" }
+      ],
+      "sources": [
+        { "title": "CBS News", "url": "https://www.cbsnews.com/news/september-cpi-report-inflation-energy-costs/" },
+        { "title": "Schwab", "url": "https://www.schwab.com/learn/story/stock-market-update-open" }
+      ]
+    },
+    {
+      "id": "e3", "rank": 3, "date": "2026-10-16",
+      "title": "美股週五科技重挫，AI 融資與債務疑慮升溫",
+      "what": "10/16 道瓊收 52,002.41（-0.34%）、S&P 500 收 7,659.44（-1.09%）、Nasdaq 收 26,140.03（-2.14%）；S&P 科技類股跌逾 3%，能源類股漲約 2.5%。CoreWeave（債務約 500 億美元）等 AI 基建股重挫。Babypips 統計 S&P 500 本週約跌 2.1%。",
+      "why": "市場開始質疑高額 AI 資本支出能否轉成獲利，而借貸成本上升放大了此疑慮。10 年期美債殖利率週內由約 5.24% 降至約 5.09%。",
+      "discrepancy": null,
+      "taiwanImpact": null,
+      "primaryEntity": "us-tech", "entities": ["us-tech", "us-wallst", "us-bonds"],
+      "sentiment": -2, "storylines": ["ai-capex"],
+      "metrics": [
+        { "label": "Nasdaq", "value": "26,140.03", "change": "-2.14%" },
+        { "label": "S&P 500", "value": "7,659.44", "change": "-1.09%" },
+        { "label": "道瓊", "value": "52,002.41", "change": "-0.34%" },
+        { "label": "10 年期殖利率", "value": "約 5.09%", "change": "週初約 5.24%" }
+      ],
+      "sources": [
+        { "title": "TheStreet", "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-oct-16-2026" },
+        { "title": "Babypips", "url": "https://www.babypips.com/analysis/financial-forex-market-weekly-recap-october-16-2026" }
+      ]
+    },
+    {
+      "id": "e4", "rank": 4, "date": "2026-10-16",
+      "title": "台積電法說：營收優於預期，但股價收黑，台股週跌 2,202 點",
+      "what": "台積電 Q3 營收約 467 億美元（季增 16.2%，高於財測上緣），毛利率 66.4%（季減 1.3 個百分點，主因 2 奈米放量稀釋），EPS 新台幣 29.43 元。Q4 財測營收 523–543 億美元、毛利率 65%–67%，全年營收預估成長約 44%（美元計），資本支出維持 600–640 億美元。法說後 10/16 股價跌 20 元收 2,420 元，加權指數收 47,111 點（+141 點），但全週累計下跌 2,202 點。",
+      "why": "基本面強勁，但毛利率下滑與資金流出使股價反應偏弱；外資連 8 個交易日賣超，10/16 賣超 461 億元。",
+      "discrepancy": null,
+      "taiwanImpact": {
+        "summary": "台積電基本面強，但毛利率下滑與外資連 8 日賣超使股價收黑，台股全週跌 2,202 點。",
+        "direction": -1,
+        "channels": ["半導體", "台股", "外資"]
+      },
+      "primaryEntity": "tw-fab", "entities": ["tw-fab", "tw-twse"],
+      "sentiment": -1, "storylines": ["tw-capital-outflow"],
+      "metrics": [
+        { "label": "台積電 Q3 營收", "value": "約 467 億美元", "change": "季增 16.2%" },
+        { "label": "毛利率", "value": "66.4%", "change": "季減 1.3 個百分點" },
+        { "label": "台積電股價", "value": "2,420 元", "change": "-20 元" },
+        { "label": "加權指數", "value": "47,111", "change": "週 -2,202 點" },
+        { "label": "外資 10/16", "value": "賣超 461 億元" }
+      ],
+      "sources": [
+        { "title": "BigGo Finance", "url": "https://finance.biggo.com/news/US_TSM_2026-10-15" },
+        { "title": "風傳媒", "url": "https://www.storm.mg/lifestyle/11173036" }
+      ]
+    },
+    {
+      "id": "e5", "rank": 5, "date": "2026-10-16",
+      "title": "新台幣單週貶逾 1.4%，外資撤出、央行出手",
+      "what": "10/16 新台幣收 32.338 元，貶 7.3 分；本週貶值 4.63 角，約 1.43%，為一年多來最大單週貶幅。盤中一度貶破 32.5，央行進場調節；外匯單週成交量創紀錄。其他市場：美元指數週跌約 0.5%；黃金收約 4,167 美元，週跌約 0.5%。",
+      "why": "匯率受外資賣超與美元走勢牽動，央行的態度是下週觀察重點，市場關注 32.6 與 32.8 關卡。",
+      "discrepancy": "新台幣週貶幅約 1.43%，MoneyDJ 標題為 1.45%，來源間有小幅出入。",
+      "taiwanImpact": {
+        "summary": "新台幣出現一年多來最大單週貶幅，央行進場調節，市場關注 32.6 與 32.8 關卡。",
+        "direction": -1,
+        "channels": ["匯率", "外資"]
+      },
+      "primaryEntity": "tw-cbc", "entities": ["tw-cbc", "tw-twse", "gold-vault"],
+      "sentiment": -1, "storylines": ["tw-capital-outflow"],
+      "metrics": [
+        { "label": "美元兌新台幣", "value": "32.338", "change": "週貶約 1.43%" },
+        { "label": "美元指數", "value": "週跌約 0.5%" },
+        { "label": "黃金", "value": "約 4,167 美元", "change": "週 -0.5%" }
+      ],
+      "sources": [
+        { "title": "UDN", "url": "https://money.udn.com/money/story/5616/9820037" },
+        { "title": "MoneyDJ", "url": "https://www.moneydj.com/kmdj/news/newsviewer.aspx?a=fddf0c22-6490-4aa4-8900-0fa7612ea987" },
+        { "title": "CNA", "url": "https://www.cna.com.tw/news/afe/202610160208.aspx" }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "e1", "to": "e2", "label": "能源價格推升通膨" },
+    { "from": "e2", "to": "e3", "label": "借貸成本上升放大 AI 債務疑慮" },
+    { "from": "e4", "to": "e5", "label": "外資賣超牽動新台幣" }
+  ],
+  "storylines": [
+    { "id": "mideast-energy", "name": "中東能源緊張" },
+    { "id": "fed-hiking-cycle", "name": "Fed 升息循環" },
+    { "id": "ai-capex", "name": "AI 資本支出疑慮" },
+    { "id": "tw-capital-outflow", "name": "外資撤出台灣" }
+  ],
+  "watchlist": [
+    { "date": "2026-10-20", "text": "財報：GM、Netflix、GE Aerospace、RTX（日期可能調整）；美國新屋開工", "entities": ["us-wallst"], "confirmed": false },
+    { "date": "2026-10-21", "text": "財報：Meta、Tesla、IBM、德州儀器、Lam Research、SAP（日期可能調整）", "entities": ["us-tech"], "confirmed": false },
+    { "date": "2026-10-22", "text": "財報：P&G、Lockheed Martin、Blackstone（日期可能調整）；美國初領失業金", "entities": ["us-wallst"], "confirmed": false },
+    { "date": "2026-10-23", "text": "密大消費者信心；American Express 財報", "entities": ["us-wallst"], "confirmed": false },
+    { "date": "2026-10-27", "text": "Fed 會議 10/27–28", "entities": ["us-fed"], "confirmed": true },
+    { "date": "2026-10-29", "text": "美國 Q3 GDP 初值", "entities": ["us-fed"], "confirmed": true },
+    { "date": null, "text": "持續關注中東與荷莫茲海峽局勢、油價", "entities": ["me-oil", "sea-hormuz"], "confirmed": true },
+    { "date": null, "text": "持續關注新台幣與央行動向、外資進出", "entities": ["tw-cbc"], "confirmed": true }
+  ]
+}

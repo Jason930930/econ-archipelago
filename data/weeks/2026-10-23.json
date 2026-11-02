@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "weekId": "2026-10-23",
+  "period": { "start": "2026-10-17", "end": "2026-10-23" },
+  "title": "財金週報（2026/10/17–2026/10/23）",
+  "indicators": {
+    "brent": { "value": 116.72, "unit": "USD/bbl", "changePct": null, "note": "10/23 收盤；10/22 收約 111.86 美元，10/23 盤中 114–117 美元" },
+    "wti": { "value": 103.44, "unit": "USD/bbl", "changePct": null, "note": "10/23 收盤" },
+    "fedFunds": { "value": 4.0, "range": [3.75, 4.0], "unit": "%", "note": "9/16 升息後區間，取上緣；區間引自 Motley Fool" },
+    "us10y": { "value": 4.99, "unit": "%", "changePct": null, "note": "10/22" },
+    "sp500": { "value": 7623.68, "changePct": -0.52, "note": "10/23 單日漲跌；連續第二週收跌" },
+    "nasdaq": { "value": 25955.34, "changePct": -0.21, "note": "10/23 單日漲跌；連續第二週收跌" },
+    "dow": { "value": 52215.16, "changePct": -1.23, "note": "10/23 單日漲跌；週線為正" },
+    "taiex": { "value": 46041, "changePct": -2.3, "note": "10/22 收盤（10/23 休市）；週跌約 1,070 點，週跌幅為週報自行計算" },
+    "cpiYoY": { "value": 3.7, "unit": "%", "note": "9 月 CPI" },
+    "gold": { "value": 4010, "unit": "USD/oz", "changePct": -1.24, "note": "10/23 單日跌幅；10/22 收 4,061.30 美元（-2.1%）" },
+    "usdtwd": { "value": 32.508, "changePct": null, "note": "10/22 收盤" }
+  },
+  "events": [
+    {
+      "id": "e1", "rank": 1, "date": "2026-10-22",
+      "title": "AI 支出疑慮引爆科技股賣壓，S&P 500、Nasdaq 連兩週收跌",
+      "what": "10/22 Meta 財報營收優於預期，但把 2026 年資本支出下限上調至 1,350 億美元，自由現金流為負 21.2 億美元，股價單日跌約 6.1%。CoreWeave 跌 8.3%。Nasdaq 100 當日跌 2.3%，SMH 跌 4.8%。10/23 Dow 跌 652.82 點（-1.23%）收 52,215.16，S&P 500 收 7,623.68（-0.52%），Nasdaq 收 25,955.34（-0.21%）。S&P 500 與 Nasdaq 連續第二週收跌，Dow 週線為正。",
+      "why": "市場同時檢視 AI 資本支出回報與融資成本。",
+      "discrepancy": null,
+      "taiwanImpact": null,
+      "primaryEntity": "us-tech", "entities": ["us-tech", "us-wallst"],
+      "sentiment": -2, "storylines": ["ai-capex"],
+      "metrics": [
+        { "label": "Meta 2026 資本支出下限", "value": "1,350 億美元" },
+        { "label": "Meta 股價", "value": "單日約 -6.1%" },
+        { "label": "SMH", "value": "-4.8%", "change": "10/22" },
+        { "label": "道瓊", "value": "52,215.16", "change": "-1.23%" },
+        { "label": "S&P 500", "value": "7,623.68", "change": "-0.52%" },
+        { "label": "Nasdaq", "value": "25,955.34", "change": "-0.21%" }
+      ],
+      "sources": [
+        { "title": "Benzinga", "url": "https://www.benzinga.com/markets/equities/26/10/62539017/meta-ai-spending-10-year-yield-below-5-stock-market-today" },
+        { "title": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-october-23-dow-sp-500-nasdaq-tesla-meta-093000521.html" }
+      ]
+    },
+    {
+      "id": "e2", "rank": 2, "date": "2026-10-23",
+      "title": "中東緊張升高，Brent 創六個月新高",
+      "what": "10/21 川普稱未與伊朗談判；沙烏地 Shaybah 油田遭無人機攻擊，紅海航運風險上升。10/23 Brent 收 116.72 美元（四月底以來高點，連三週上漲），WTI 收 103.44 美元。",
+      "why": "推升通膨與運輸成本，影響央行判斷。",
+      "discrepancy": "10/22 Brent 收盤約 111.86 美元，10/23 盤中 114–117 美元。",
+      "taiwanImpact": null,
+      "primaryEntity": "me-oil", "entities": ["me-oil"],
+      "sentiment": -2, "storylines": ["mideast-energy"],
+      "metrics": [
+        { "label": "Brent", "value": "116.72 美元", "change": "連三週上漲" },
+        { "label": "WTI", "value": "103.44 美元" }
+      ],
+      "sources": [
+        { "title": "BusinessToday", "url": "https://www.businesstoday.in/latest/economy/story/brent-crude-hits-over-117-a-barrel-highest-in-six-months-as-fears-of-fresh-us-iran-strikes-mount-563425-2026-10-23" }
+      ]
+    },
+    {
+      "id": "e3", "rank": 3, "date": null,
+      "title": "通膨升溫、Fed 10/28 開會",
+      "what": "9 月 CPI 年增 3.7%（8 月 3.4%），月增 0.6%；核心 CPI 年增 2.6%。Fed 9/16 升息至 3.75%–4.00%。10 年期殖利率 10/22 降至 4.99%。市場預期 10 月升息機率約 5%；CME FedWatch 估 72% 機率 2027/9/15 前升至 4.50%–4.75%。",
+      "why": "高利率持續影響估值與融資成本。",
+      "discrepancy": "利率區間引自 Motley Fool。",
+      "taiwanImpact": null,
+      "primaryEntity": "us-fed", "entities": ["us-fed", "us-bonds"],
+      "sentiment": -1, "storylines": ["fed-hiking-cycle"],
+      "metrics": [
+        { "label": "CPI 年增", "value": "3.7%", "change": "8 月 3.4%" },
+        { "label": "核心 CPI 年增", "value": "2.6%" },
+        { "label": "10 年期殖利率", "value": "4.99%", "change": "10/22" },
+        { "label": "10 月升息機率", "value": "約 5%" }
+      ],
+      "sources": [
+        { "title": "Chase", "url": "https://www.chase.com/personal/investments/learning-and-insights/article/will-the-federal-reserve-hike-rates-at-october-2026-fomc-meeting" },
+        { "title": "Motley Fool", "url": "https://www.fool.com/investing/2026/10/23/federal-reserve-latest-october-inflation-forecast-has-arrived-terrible-news-wall-street/" }
+      ]
+    },
+    {
+      "id": "e4", "rank": 4, "date": "2026-10-22",
+      "title": "台股連假前重挫，休市四天、10/27 復市",
+      "what": "10/22 加權指數跌 846 點收 46,041，跌破季線；10/16 收 47,111.26，本週約跌 1,070 點。外資賣超約 815.82 億元，公股行庫買超 221.27 億元。10/23 休市，10/27 開盤。新台幣 10/22 收 32.508。",
+      "why": "休市期間國際波動將於 10/27 反映。",
+      "discrepancy": "本週跌幅約 -2.3% 為週報自行計算。",
+      "taiwanImpact": {
+        "summary": "台股跌破季線、外資賣超約 815.82 億元，休市期間的國際波動將於 10/27 復市時反映。",
+        "direction": -1,
+        "channels": ["台股", "外資", "匯率"]
+      },
+      "primaryEntity": "tw-twse", "entities": ["tw-twse", "tw-cbc"],
+      "sentiment": -2, "storylines": ["tw-capital-outflow"],
+      "metrics": [
+        { "label": "加權指數", "value": "46,041", "change": "10/22 -846 點" },
+        { "label": "外資", "value": "賣超約 815.82 億元" },
+        { "label": "公股行庫", "value": "買超 221.27 億元" },
+        { "label": "美元兌新台幣", "value": "32.508", "change": "10/22" }
+      ],
+      "sources": [
+        { "title": "工商時報", "url": "https://www.ctee.com.tw/news/20261023700058-439901" },
+        { "title": "經濟日報", "url": "https://money.udn.com/money/story/5607/9832642" },
+        { "title": "Capital Futures", "url": "https://www.capitalfutures.com.tw/zh-tw/financial/breakingnewsarticle?contentid=c26101600603" }
+      ]
+    },
+    {
+      "id": "e5", "rank": 5, "date": "2026-10-23",
+      "title": "黃金跌至近三個月低點",
+      "what": "10/22 黃金跌 2.1% 至 4,061.30 美元，10/23 再跌 1.24% 至約 4,010 美元；白銀 10/22 跌 4.5% 至 55.11 美元。",
+      "why": "週報未另述影響；來源標題指金價在油價持續上漲之際開在三個月低點。",
+      "discrepancy": "Yahoo 稱「三個月低」，Benzinga 稱「兩個多月低」。",
+      "taiwanImpact": null,
+      "primaryEntity": "gold-vault", "entities": ["gold-vault"],
+      "sentiment": 0, "storylines": [],
+      "metrics": [
+        { "label": "黃金", "value": "約 4,010 美元", "change": "10/23 -1.24%" },
+        { "label": "白銀", "value": "55.11 美元", "change": "10/22 -4.5%" }
+      ],
+      "sources": [
+        { "title": "Yahoo Finance", "url": "https://finance.yahoo.com/personal-finance/investing/article/gold-price-today-friday-october-23-2026-gold-opens-at-3-month-lows-as-oil-prices-keep-rising-111248003.html" }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "e2", "to": "e3", "label": "油價推升通膨、影響央行判斷" },
+    { "from": "e3", "to": "e1", "label": "融資成本壓抑科技股估值" }
+  ],
+  "storylines": [],
+  "watchlist": [
+    { "date": "2026-10-27", "text": "台股復市", "entities": ["tw-twse"], "confirmed": true },
+    { "date": "2026-10-27", "text": "美國耐久財訂單、消費者信心", "entities": ["us-fed"], "confirmed": true },
+    { "date": "2026-10-28", "text": "加拿大央行利率決策", "entities": ["global"], "confirmed": true },
+    { "date": "2026-10-28", "text": "Fed 利率決策（美東 14:00）與 Warsh 記者會（台灣時間 10/29 凌晨）", "entities": ["us-fed"], "confirmed": true },
+    { "date": "2026-10-29", "text": "美國 9 月 PCE、Q3 GDP 初估", "entities": ["us-fed"], "confirmed": true },
+    { "date": null, "text": "留意中東情勢與油價", "entities": ["me-oil"], "confirmed": true }
+  ]
+}
