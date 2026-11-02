@@ -1,0 +1,61 @@
+name: 每日更新 FRED 節點狀態
+
+# 每天台北 06:17（UTC 22:17）抓 FRED，資料有變動才提交，並觸發部署。
+# 以 GITHUB_TOKEN 推送的提交不會觸發其他工作流程，所以推送後手動觸發 deploy.yml（workflow_dispatch 例外）。
+on:
+  schedule:
+    - cron: '17 22 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fred-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 抓取 FRED
+        run: npx tsx scripts/fetch-fred.ts
+      - name: 驗證
+        run: npm run validate
+      - name: 單元測試
+        run: npm test
+      - name: 提交並推送（有變動才做）
+        id: push
+        run: |
+          if git diff --quiet -- data/state/fred.json; then
+            echo "FRED 資料沒有變動，不提交。"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/state/fred.json
+          git commit -m "data: FRED $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((i * 5))
+          done
+          echo "推送失敗" >&2
+          exit 1
+      - name: 觸發部署
+        if: steps.push.outputs.pushed == 'true'
+        run: gh workflow run deploy.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}

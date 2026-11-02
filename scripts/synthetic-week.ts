@@ -5,8 +5,9 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { ProposedChannel, WeekData, WeekEvent } from '../src/data/types';
-import { CHANNELS, getChannelNode, touches } from '../src/world/channels';
+import type { NodeStateEntry, ProposedChannel, WeekData, WeekEvent } from '../src/data/types';
+import { CHANNEL_NODES, CHANNELS, getChannelNode, touches } from '../src/world/channels';
+import { isQualitative } from '../src/world/stateSources';
 
 const SYNTHETIC_ENTITY = { id: 'synthetic-co', name: '演練公司', region: 'in' as const, sector: 'tech' as const, aliases: [] as string[] };
 
@@ -33,6 +34,12 @@ function proposalFor(e: WeekEvent): ProposedChannel[] {
   return [];
 }
 
+/** rank 1 事件碰得到的第一個定性節點，加一筆演練狀態（已有該節點就不加）。 */
+function nodeStatesFor(e: WeekEvent, existing: NodeStateEntry[]): NodeStateEntry[] {
+  const n = CHANNEL_NODES.find((x) => isQualitative(x.id) && e.places.some((p) => touches(p, x.path)) && !existing.some((s) => s.node === x.id));
+  return n ? [...existing, { node: n.id, level: 'mid', direction: 0, basis: '演練用狀態', evidence: [e.id] }] : existing;
+}
+
 /** 純函式：演練 v2 的新實體（rank 1 引用）、新區塊（rank 2 引用日本房地產）、管道標註與提議；路徑一律去重。 */
 export function synthesizeNextWeek(w: WeekData): WeekData {
   const end = addDays(w.weekId, 7);
@@ -54,6 +61,7 @@ export function synthesizeNextWeek(w: WeekData): WeekData {
     newEntities: alreadyHas ? [] : [SYNTHETIC_ENTITY],
     // 只保留演練提議；沿用底週的提議會讓演練週和真實週重複。
     proposedChannels: r1 ? proposalFor(r1) : [],
+    nodeStates: r1 ? nodeStatesFor(r1, w.nodeStates ?? []) : w.nodeStates ?? [],
     storylines: [],
     watchlist: w.watchlist.map((x) => ({ ...x, date: x.date ? addDays(x.date, 7) : null })),
   };
