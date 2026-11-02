@@ -1,3 +1,4 @@
+import './ui/styles.css';
 import type { ArchiveIndex } from './data/buildIndex';
 import type { WeekData } from './data/types';
 import { createWorld } from './render/world';
