@@ -61,6 +61,9 @@
           "title": "Yahoo Finance",
           "url": "https://finance.yahoo.com/a.html"
         }
+      ],
+      "channels": [
+        "ai-capex-to-tw-semis"
       ]
     },
     {
@@ -118,6 +121,20 @@
       "region": "jp",
       "sector": "tech",
       "aliases": []
+    }
+  ],
+  "proposedChannels": [
+    {
+      "id": "jp-tech-proposal",
+      "fromPath": "jp/tech",
+      "toPath": "us/tech",
+      "fromVar": "日本科技",
+      "toVar": "美國科技",
+      "sign": 1,
+      "mechanism": "測試",
+      "evidence": [
+        "e1"
+      ]
     }
   ]
 }
