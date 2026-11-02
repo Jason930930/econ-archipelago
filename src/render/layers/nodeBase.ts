@@ -29,15 +29,18 @@ export function makeNode(opts: {
   anchor: () => THREE.Vector3;
   ringRadius: number;
   ringY: number;
+  /** 環的水平中心（世界座標）；地區節點的 group 位於原點，需指定島心。 */
+  ringCenter?: [number, number];
   update?: (dt: number, t: number) => void;
 }): WorldNode {
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(opts.ringRadius, opts.ringRadius * 1.18, 48).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }),
   );
-  ring.position.y = opts.ringY;
+  ring.position.set(opts.ringCenter?.[0] ?? 0, opts.ringY, opts.ringCenter?.[1] ?? 0);
   ring.visible = false;
   ring.userData.path = opts.path;
+  ring.userData.isRing = true;
   opts.object.add(ring);
   const mats: { mat: THREE.MeshStandardMaterial; base: THREE.Color }[] = [];
   const collect = () => {

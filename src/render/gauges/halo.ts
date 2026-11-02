@@ -4,6 +4,7 @@ import type { Gauge, GaugeHost } from './types';
 /** 光暈（金價）：大小與透明度隨 level。 */
 export function halo(): Gauge {
   const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), new THREE.MeshBasicMaterial({ color: '#ffd76a', transparent: true, opacity: 0.2, depthWrite: false }));
+  m.raycast = () => {};
   let level = 0.5;
   let size = 1;
   return {

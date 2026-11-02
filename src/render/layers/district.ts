@@ -23,7 +23,8 @@ export function buildDistrict(path: string, sector: SectorId, at: [number, numbe
   const group = new THREE.Group();
   group.position.set(at[0], ISLAND_TOP_Y, at[1]);
   const slab = new THREE.Mesh(
-    new THREE.BoxGeometry(plot * 0.92, 0.12, plot * 0.92),
+    // 圓形地皮：與格位計算（以圓距離間隔）一致，斜向相鄰也不會重疊或超出島緣。
+    new THREE.CylinderGeometry(plot * 0.46, plot * 0.46, 0.12, 28),
     new THREE.MeshStandardMaterial({ color: GROUP_COLORS[getSector(sector).group], roughness: 0.9, flatShading: true }),
   );
   slab.position.y = 0.06;

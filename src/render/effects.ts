@@ -107,7 +107,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
       (ring.material as THREE.MeshBasicMaterial).opacity = 0.95 * (1 - k * k);
       column.scale.set(1 - k * 0.4, 0.5 + Math.sin(k * Math.PI) * (height + 1), 1 - k * 0.4);
       (column.material as THREE.MeshBasicMaterial).opacity = 0.35 * Math.sin(k * Math.PI);
-      node.object.scale.setScalar(1 + Math.sin(k * Math.PI * 2) * strength * (1 - k));
+      // 地區節點的 group 位於原點，縮放會讓島滑開，所以只對區塊與實體做彈跳。
+      if (node.kind !== 'region') node.object.scale.setScalar(1 + Math.sin(k * Math.PI * 2) * strength * (1 - k));
     });
     node.object.scale.setScalar(1);
     remove(ring);

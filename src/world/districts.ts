@@ -54,10 +54,10 @@ export function districtSlots(radius: number, n: number): { offsets: [number, nu
   return { offsets: spread(pack(radius, n, lo)!, radius, lo), plot: lo };
 }
 
-/** 本週提到的優先，再依歷史提及次數由多到少，最後依 id 字母序。 */
-export function pickVisibleEntities(candidates: { id: string; mentioned: number }[], inWeek: Set<string>, max = 4): string[] {
+/** 固定顯示的（掛有指標儀表）最優先，其次本週提到的，再依歷史提及次數由多到少，最後依 id 字母序。 */
+export function pickVisibleEntities(candidates: { id: string; mentioned: number }[], inWeek: Set<string>, max = 4, pinned: Set<string> = new Set()): string[] {
   return [...candidates]
-    .sort((a, b) => Number(inWeek.has(b.id)) - Number(inWeek.has(a.id)) || b.mentioned - a.mentioned || a.id.localeCompare(b.id))
+    .sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id)) || Number(inWeek.has(b.id)) - Number(inWeek.has(a.id)) || b.mentioned - a.mentioned || a.id.localeCompare(b.id))
     .slice(0, max)
     .map((c) => c.id);
 }

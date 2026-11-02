@@ -11,7 +11,7 @@ test.each([...SECTOR_IDS])('guide documents sector %s', (id) => expect(guide).to
 test.each([...INDICATOR_KEYS])('guide documents indicator %s', (key) => expect(guide).toContain(`\`${key}\``));
 
 test('guide covers the v2 entity workflow', () => {
-  for (const s of ['data/world/registry.json', 'newEntities', '人物不新增', 'schemaVersion: 2', '"geo"']) expect(guide, s).toContain(s);
+  for (const s of ['data/world/registry.json', 'newEntities', '人物不新增', 'schemaVersion: 2', '"geo"', '不要填 `addedIn`', '`aliases` 必填', '`places` 不可重複']) expect(guide, s).toContain(s);
 });
 
 test('guide embeds the latest example week verbatim', () => {

@@ -4,6 +4,8 @@ import type { Gauge, GaugeHost } from './types';
 /** 熱霧（通膨）：地區上空半透明暖色霧片，透明度 0.38·level。 */
 export function haze(): Gauge {
   const m = new THREE.Mesh(new THREE.CircleGeometry(1, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ff9a4d', transparent: true, opacity: 0, depthWrite: false }));
+  // 純裝飾：不參與拾取，否則會擋住底下美國的區塊與實體。
+  m.raycast = () => {};
   let target = 0;
   let baseY = 3;
   return {

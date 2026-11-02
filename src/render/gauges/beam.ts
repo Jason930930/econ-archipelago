@@ -7,6 +7,7 @@ export function beam(): Gauge {
     new THREE.CylinderGeometry(0.16, 0.24, 1, 10, 1, true).translate(0, 0.5, 0),
     new THREE.MeshBasicMaterial({ color: '#ffe08a', transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }),
   );
+  m.raycast = () => {};
   return {
     attach: (host) => void mountAt(host, 'roof', m),
     set(r) {

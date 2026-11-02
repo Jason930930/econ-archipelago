@@ -81,3 +81,11 @@ describe('placeAtSea', () => {
     for (const l of L.values()) expect(Math.hypot(p[0] - l.center[0], p[1] - l.center[1])).toBeGreaterThanOrEqual(l.radius + 0.6 - 1e-6);
   });
 });
+
+describe('pickVisibleEntities pinning', () => {
+  test('indicator-bound entities stay visible even when crowded out', () => {
+    const c = ['a', 'b', 'c', 'd', 'gold'].map((id) => ({ id, mentioned: id === 'gold' ? 0 : 5 }));
+    expect(pickVisibleEntities(c, new Set(['a', 'b', 'c', 'd']), 4, new Set(['gold']))).toContain('gold');
+    expect(pickVisibleEntities(c, new Set(['a', 'b', 'c', 'd']), 4, new Set(['gold']))).toHaveLength(4);
+  });
+});

@@ -79,7 +79,7 @@ function regionNode(id: RegionId, layout: IslandLayout): WorldNode {
   group.userData.radius = layout.radius;
   tagPath(group, id);
   return makeNode({
-    path: id, kind: 'region', object: group, ringRadius: layout.radius + 0.4, ringY: 0.35,
+    path: id, kind: 'region', object: group, ringRadius: layout.radius + 0.4, ringY: 0.35, ringCenter: layout.center,
     anchor: () => new THREE.Vector3(layout.center[0], ISLAND_TOP_Y + 1.5, layout.center[1]),
   });
 }
@@ -157,7 +157,9 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       .filter((e) => e.region === region && e.sector === sector)
       .map((e) => ({ id: e.id, mentioned: input.mentions[`${d.path}/${e.id}`] ?? 0 }));
     const inWeek = new Set([...weekFocus].filter((p) => p.startsWith(`${d.path}/`)).map((p) => p.split('/')[2]!));
-    const visible = pickVisibleEntities(candidates, inWeek);
+    // 掛有指標儀表的實體（黃金、比特幣）必須畫出來，否則儀表會消失。
+    const pinned = new Set(INDICATOR_BINDINGS.map((b) => b.path).filter((p) => p.startsWith(`${d.path}/`)).map((p) => p.split('/')[2]!));
+    const visible = pickVisibleEntities(candidates, inWeek, 4, pinned);
     if (onlyIfChanged && shownEntities.get(d.path) === visible.join(',')) return false;
     shownEntities.set(d.path, visible.join(','));
     for (const c of graph.children(d.path)) graph.removeSubtree(c.path);
@@ -353,6 +355,8 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       const n = graph.get(path);
       if (!n) return null;
       const v = n.kind === 'region' ? n.anchor().setY(ISLAND_TOP_Y) : n.object.getWorldPosition(new THREE.Vector3()).setY(ISLAND_TOP_Y + 0.15);
+      // 相機矩陣通常在渲染時才更新；剛 lookAt 完還沒渲染時要先手動更新，否則會投影到舊位置。
+      camera.updateMatrixWorld();
       v.project(camera);
       if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) return null;
       const rect = canvas.getBoundingClientRect();
