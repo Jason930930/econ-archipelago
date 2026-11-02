@@ -21,7 +21,13 @@ const next: WeekData = {
   weekId: end,
   period: { start, end },
   title: `財金週報（${slash(start)}–${slash(end)}）【演練】`,
-  events: w.events.map((e) => ({ ...e, date: e.date ? addDays(e.date, 7) : null })),
+  // 演練 v2：新增一個實體並在 rank 1 引用；rank 2 引用日本原本沒有的房地產部門（應自動長出區塊）。
+  events: w.events.map((e) => ({
+    ...e,
+    date: e.date ? addDays(e.date, 7) : null,
+    places: e.rank === 1 ? [...e.places, 'in/tech/synthetic-co'] : e.rank === 2 ? [...e.places, 'jp/real-estate'] : e.places,
+  })),
+  newEntities: [{ id: 'synthetic-co', name: '演練公司', region: 'in', sector: 'tech', aliases: [] }],
   storylines: [],
   watchlist: w.watchlist.map((x) => ({ ...x, date: x.date ? addDays(x.date, 7) : null })),
 };
