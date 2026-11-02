@@ -11,6 +11,8 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: 'http://localhost:4173/econ-archipelago/',
+    // 不穩定的測試在第一次重試時錄下 trace，CI 會上傳，方便事後追根因。
+    trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], launchOptions: { executablePath, args } } }],
   webServer: {
