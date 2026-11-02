@@ -2,12 +2,14 @@ import * as THREE from 'three';
 import { districtSlots, pickVisibleEntities } from '../world/districts';
 import { project } from '../world/geo';
 import type { WorldParams } from '../world/indicators';
-import { lerpWorldParams } from '../world/indicators';
+import { INDICATOR_BINDINGS, lerpWorldParams } from '../world/indicators';
 import { layoutIslands, placeAtSea, type IslandLayout } from '../world/layout';
 import { getRegion, type RegionId } from '../world/regions';
 import type { EntityRecord } from '../world/registry';
 import { getSector, type SectorId } from '../world/sectors';
 import { createEffects, type Effects } from './effects';
+import { createGauge, type Gauge, type GaugeHost } from './gauges';
+import { buildShipping } from './layers/shipping';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
 import { buildDistrict, type DistrictNode } from './layers/district';
 import { buildEntityNode } from './layers/entity';
@@ -71,6 +73,7 @@ function regionNode(id: RegionId, layout: IslandLayout): WorldNode {
   const label = labelObject(getRegion(id).name, 'island-label');
   label.position.set(layout.center[0], 0.6, layout.center[1] + layout.radius + 0.6);
   group.add(label);
+  group.userData.radius = layout.radius;
   tagPath(group, id);
   return makeNode({
     path: id, kind: 'region', object: group, ringRadius: layout.radius + 0.4, ringY: 0.35,
@@ -87,7 +90,8 @@ function virtualNode(path: string, kind: NodeKind, at: THREE.Vector3): WorldNode
 
 export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, number][] = []): WorldView {
   const overlay = canvas.parentElement ?? document.body;
-  const stage = createStage(canvas, overlay, worldExtent(seaPoints));
+  const extent = worldExtent(seaPoints);
+  const stage = createStage(canvas, overlay, extent);
   const { scene, camera } = stage;
   const graph = new WorldGraph();
   const root = new THREE.Group();
@@ -108,6 +112,31 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
   let focus: string | null = null;
   const highlighted = new Set<string>();
   const dimmed = new Set<string>();
+
+  // L3：指標儀表依綁定表掛在節點上；節點重建時重新掛載。
+  const gauges = new Map<string, { gauge: Gauge; node: WorldNode }>();
+  function attachGauges() {
+    for (const b of INDICATOR_BINDINGS) {
+      const node = graph.get(b.path);
+      const cur = gauges.get(b.path);
+      if (cur && cur.node === node) continue;
+      cur?.gauge.dispose();
+      gauges.delete(b.path);
+      if (!node) continue;
+      const gauge = createGauge(b.gauge);
+      gauge.attach(node as GaugeHost);
+      gauges.set(b.path, { gauge, node });
+    }
+    if (current) apply(current);
+  }
+
+  let shipping = buildShipping(graph, extent.halfW * 2);
+  function rebuildShipping() {
+    shipping.group.removeFromParent();
+    shipping = buildShipping(graph, extent.halfW * 2);
+    root.add(shipping.group);
+    if (current) shipping.setCount(current.tankers);
+  }
 
   function applyStates() {
     for (const n of graph.all()) n.setState(highlighted.has(n.path) ? 'highlight' : dimmed.has(n.path) ? 'dim' : 'normal');
@@ -176,6 +205,8 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
 
   stage.onFrame((dt, t) => {
     for (const n of graph.all()) n.update(dt, t);
+    for (const { gauge } of gauges.values()) gauge.update(dt, t);
+    shipping.update(dt, t);
   });
 
   // 拾取：沿父節點往上找第一個標了 path 的物件，因此回傳的是最深一層。
@@ -227,6 +258,13 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
   function apply(p: WorldParams) {
     current = p;
     stage.setWeather(p.weather);
+    shipping.setCount(p.tankers);
+    dimmed.clear();
+    for (const [path, r] of Object.entries(p.gauges)) {
+      gauges.get(path)?.gauge.set(r, colorMode);
+      if (r.status !== 'fresh') dimmed.add(path);
+    }
+    applyStates();
   }
 
   return {
@@ -235,6 +273,8 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     build(input) {
       built = input;
       buildDistricts(input);
+      attachGauges();
+      rebuildShipping();
       applyStates();
     },
     setWeekFocus(paths) {
@@ -246,7 +286,10 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
         if (n.kind !== 'district' || n.path.startsWith('seas')) continue;
         changed = buildEntities(n as DistrictNode, built, true) || changed;
       }
-      if (changed) applyStates();
+      if (changed) {
+        attachGauges();
+        applyStates();
+      }
     },
     setParams: apply,
     tweenTo(p, ms) {

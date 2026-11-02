@@ -33,16 +33,25 @@ function pack(radius: number, n: number, plot: number): [number, number][] | nul
   return out.slice(0, n);
 }
 
+/** 島有餘裕時把格位等比往外散開（最多 1.8 倍），避免區塊全擠在島中央。 */
+function spread(offsets: [number, number][], radius: number, plot: number): [number, number][] {
+  const maxRho = Math.max(...offsets.map(([x, z]) => Math.hypot(x, z)));
+  if (maxRho < 1e-9) return offsets;
+  const limit = radius * FILL - plot / 2;
+  const k = Math.min(1.8, (limit * 0.9) / maxRho);
+  return k > 1 ? offsets.map(([x, z]) => [x * k, z * k]) : offsets;
+}
+
 export function districtSlots(radius: number, n: number): { offsets: [number, number][]; plot: number } {
   if (n <= 0) return { offsets: [], plot: maxPlot(radius) };
   let lo = 0.01, hi = maxPlot(radius);
-  if (pack(radius, n, hi)) return { offsets: pack(radius, n, hi)!, plot: hi };
+  if (pack(radius, n, hi)) return { offsets: spread(pack(radius, n, hi)!, radius, hi), plot: hi };
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2;
     if (pack(radius, n, mid)) lo = mid;
     else hi = mid;
   }
-  return { offsets: pack(radius, n, lo)!, plot: lo };
+  return { offsets: spread(pack(radius, n, lo)!, radius, lo), plot: lo };
 }
 
 /** 本週提到的優先，再依歷史提及次數由多到少，最後依 id 字母序。 */
