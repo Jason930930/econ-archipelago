@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { validateFredFile } from '../src/data/fredFile';
 import { join } from 'node:path';
 import { validateArchive, type ValidationError } from '../src/data/validate';
 import { checkNewEntities, type EntityRecord } from '../src/world/registry';
@@ -35,7 +36,20 @@ try {
 }
 const seedErrors: ValidationError[] = checkNewEntities([], seed).map((i) => ({ file: 'entities.json', path: `/${i.index}/${i.field}`, message: i.message }));
 
-const errors = [...parseErrors, ...seedErrors, ...validateArchive(files, seed)];
+// FRED 快照（子專案 3）：存在時一併驗證；不存在時只提醒，網站會把 FRED 節點顯示為「未知」。
+const FRED = process.env.FRED_FILE ?? 'data/state/fred.json';
+const fredErrors: ValidationError[] = [];
+if (existsSync(FRED)) {
+  try {
+    for (const m of validateFredFile(JSON.parse(readFileSync(FRED, 'utf8')))) fredErrors.push({ file: 'fred.json', path: '/', message: m });
+  } catch (e) {
+    fredErrors.push({ file: 'fred.json', path: '/', message: `JSON 解析失敗：${(e as Error).message}` });
+  }
+} else {
+  console.log(`（尚無 ${FRED}）`);
+}
+
+const errors = [...parseErrors, ...seedErrors, ...fredErrors, ...validateArchive(files, seed)];
 if (errors.length > 0) {
   for (const e of errors) console.error(`${e.file} ${e.path}: ${e.message}`);
   console.error(`✗ ${errors.length} 個錯誤`);
