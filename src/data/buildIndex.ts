@@ -1,3 +1,4 @@
+import { computeActivation, type ChannelIndex } from '../world/activation';
 import { resolveIndicators, type ResolvedIndicators } from './indicators';
 import { CHANNEL_NODES } from '../world/channels';
 import { districtsFor } from '../world/districts';
@@ -17,6 +18,8 @@ export interface ArchiveIndex {
   mentions: Record<string, number>;
   /** 每座島的區塊（預設部門 ∪ 被引用或有實體的部門）。 */
   districts: Record<RegionId, SectorId[]>;
+  /** 傳導管道的逐週活躍度、歷史與排程提議。 */
+  channels: ChannelIndex;
 }
 
 export function sortWeeks(weeks: WeekData[]): WeekData[] {
@@ -59,5 +62,6 @@ export function buildIndex(weeks: WeekData[], seed: EntityRecord[]): ArchiveInde
     weeks: asc.map((w) => ({ weekId: w.weekId, title: w.title, period: w.period })),
     storylines: [...lines.values()],
     indicators: Object.fromEntries(asc.map((w, i) => [w.weekId, resolved[i]!])),
+    channels: computeActivation(asc),
   };
 }

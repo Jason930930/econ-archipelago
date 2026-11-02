@@ -65,3 +65,10 @@ test('entities merge seed and newEntities', () => {
   expect(idx.entities.at(-1)).toMatchObject({ id: 'micron', addedIn: '2026-11-06' });
   expect(idx.districts.us).toContain('memory');
 });
+
+test('index carries channel activation', () => {
+  const w = makeWeek('2026-10-30', { events: [makeEvent({ id: 'e1', channels: ['fed-to-us-yield'] })] });
+  const idx = buildIndex([w]);
+  expect(idx.channels.byWeek['2026-10-30']!['fed-to-us-yield']).toEqual({ intensity: 1, heat: 1, streak: 1 });
+  expect(idx.channels.proposals).toEqual([]);
+});
