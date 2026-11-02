@@ -1,0 +1,34 @@
+{
+  "name": "econ-archipelago",
+  "private": true,
+  "version": "0.1.0",
+  "description": "經濟群島：把每週財金週報演成一個可互動的 3D 經濟世界",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run index && vite",
+    "build": "npm run validate && npm run index && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "validate": "tsx scripts/validate.ts",
+    "index": "tsx scripts/build-index.ts",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.5",
+    "@types/three": "0.186.0",
+    "jsdom": "30.1.3",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}
