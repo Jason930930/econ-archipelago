@@ -1,5 +1,5 @@
 import type { WeekEvent } from '../data/types';
-import { getEntity } from '../world/entities';
+import { labelOf, type EntityRecord } from '../world/registry';
 import { el } from './dom';
 import { shortDate } from './format';
 
@@ -15,8 +15,8 @@ export function sourceList(sources: WeekEvent['sources']): HTMLElement {
   ));
 }
 
-export function renderEventCard(ev: WeekEvent, opts: { index: number; total: number }): HTMLElement {
-  const places = ev.entities.map((id) => getEntity(id).name).join('、');
+export function renderEventCard(ev: WeekEvent, opts: { index: number; total: number }, entities: EntityRecord[]): HTMLElement {
+  const places = ev.places.map((p) => labelOf(p, entities).join(' › ')).join('、');
   const meta = [`第 ${opts.index + 1} / ${opts.total} 則`, shortDate(ev.date), places].filter(Boolean).join(' · ');
 
   const card = el('article', { class: 'event-card', 'data-event-id': ev.id, 'data-sentiment': String(ev.sentiment) },

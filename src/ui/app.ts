@@ -3,14 +3,13 @@ import type { WeekData, WeekEvent } from '../data/types';
 import { createWorld, supportsWebGL, type ColorMode, type WorldView } from '../render/world';
 import { buildSteps, orderEvents, outgoingLinks, type Step } from '../story/order';
 import { initialPlayer, playerReducer, stepDuration, type PlayerAction, type PlayerState } from '../story/player';
-import { getEntity, type EntityId } from '../world/entities';
-import { primaryIndicator } from '../world/entityIndicators';
-import { computeVisualParams } from '../world/visualParams';
+import { project } from '../world/geo';
+import { computeWorldParams } from '../world/indicators';
 import { createControls, type ControlsView } from './controls';
 import { el } from './dom';
-import { renderEntityPanel } from './entityPanel';
 import { renderEventCard } from './eventCard';
-import { formatIndicator } from './format';
+import { hoverInfo } from './hover';
+import { renderNodePanel } from './nodePanel';
 import { parseHash, toHash } from './route';
 import { renderTextMode, renderWatchlist } from './textMode';
 import { renderTimeline } from './timeline';
@@ -147,6 +146,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
   handle.addEventListener('click', () => {
     panel.dataset.size = panel.dataset.size === 'full' ? '' : 'full';
   });
+  panel.addEventListener('select-node', (e) => {
+    selectNode((e as CustomEvent<{ path: string }>).detail.path);
+  });
   panel.addEventListener('select-event', (e) => {
     void selectEvent((e as CustomEvent<{ eventId: string }>).detail.eventId);
   });
@@ -177,7 +179,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   function eventPanel(ev: WeekEvent): HTMLElement {
     const order = eventOrder();
-    return renderEventCard(ev, { index: Math.max(0, order.indexOf(ev.id)), total: order.length });
+    return renderEventCard(ev, { index: Math.max(0, order.indexOf(ev.id)), total: order.length }, index.entities);
   }
 
   // ---------- 同步 UI ----------
@@ -217,7 +219,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function renderText(focusEvent: string | null) {
-    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week)) : '');
+    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week), index.entities) : '');
     if (textMode && focusEvent) textRoot.querySelector(`[data-event-id="${CSS.escape(focusEvent)}"]`)?.scrollIntoView({ block: 'start' });
   }
 
@@ -231,7 +233,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (textMode || !webglOk) return null;
     if (world) return world;
     try {
-      world = createWorld(canvas);
+      const seaPoints = index.entities.filter((e) => e.geo).map((e) => project(e.geo!.lat, e.geo!.lon));
+      world = createWorld(canvas, seaPoints);
+      world.build({ entities: index.entities, districts: index.districts, mentions: index.mentions });
     } catch {
       // 偵測通過但實際建立失敗（驅動、記憶體等）：改用文字模式，內容不受影響。
       webglOk = false;
@@ -246,21 +250,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
     world.setLowPower(window.matchMedia('(pointer: coarse)').matches || isNarrow());
     world.setTimeScale(fast ? 0.05 : 1 / player.speed);
     queueMicrotask(syncInsets);
-    world.onPick((id) => {
-      if (!id) return;
-      pause();
-      world!.highlight([id]);
-      showPanel(renderEntityPanel(id, week, index));
+    world.onPick((path) => {
+      if (path) selectNode(path);
     });
-    world.onHover((id, pos) => {
-      if (!id) {
+    world.onHover((path, pos) => {
+      if (!path) {
         tooltip.hidden = true;
         return;
       }
-      const key = primaryIndicator(id);
-      const r = key ? index.indicators[week.weekId]?.[key] : undefined;
-      tooltip.replaceChildren(el('strong', {}, getEntity(id).name), key && r ? formatIndicator(key, r) : getEntity(id).covers);
-      if (key && r?.note) tooltip.append(el('div', { class: 'indicator-note' }, r.note));
+      const info = hoverInfo(path, week.weekId, index);
+      tooltip.replaceChildren(el('strong', {}, info.title), ...info.lines.map((l) => el('div', {}, l)));
       tooltip.style.left = `${Math.min(pos.x + 14, window.innerWidth - 270)}px`;
       tooltip.style.top = `${pos.y + 14}px`;
       tooltip.hidden = false;
@@ -269,7 +268,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function paramsFor(w: WeekData) {
-    return computeVisualParams(index.indicators[w.weekId]!, w.events);
+    return computeWorldParams(index.indicators[w.weekId]!, w.events);
   }
 
   // ---------- 播放 ----------
@@ -285,15 +284,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
       setHash(ev.id);
       if (w) {
         w.highlight([]);
-        await w.flyTo(ev.primaryEntity, 1100);
+        await w.flyTo(ev.primary, 1100);
         if (token !== runToken) return;
-        await w.effects.pulse(ev.primaryEntity, ev.sentiment);
+        await w.effects.pulse(ev.primary, ev.sentiment);
         if (token !== runToken) return;
         if (ev.taiwanImpact) {
           await w.effects.ripple(ev.taiwanImpact.direction, ev.taiwanImpact.summary);
           if (token !== runToken) return;
         }
-        const flows = outgoingLinks(week, ev.id).map((l) => w.effects.flow(ev.primaryEntity, eventById(l.to)!.primaryEntity, l.label));
+        const flows = outgoingLinks(week, ev.id).map((l) => w.effects.flow(ev.primary, eventById(l.to)!.primary, l.label));
         await Promise.all(flows);
         if (token !== runToken) return;
       }
@@ -304,7 +303,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
         w.effects.clear();
         await w.resetCamera(1100);
         if (token !== runToken) return;
-        w.effects.showFlags(week.watchlist.flatMap((it) => (it.entities[0] ? [{ entity: it.entities[0], text: it.date ? `${it.date.slice(5).replace('-', '/')} ${it.text}` : it.text, confirmed: it.confirmed }] : [])));
+        w.effects.showFlags(week.watchlist.flatMap((it) => (it.places[0] ? [{ path: it.places[0], text: it.date ? `${it.date.slice(5).replace('-', '/')} ${it.text}` : it.text, confirmed: it.confirmed }] : [])));
       }
     }
 
@@ -353,10 +352,19 @@ export async function startApp(root: HTMLElement): Promise<void> {
     await runStep(token, false);
   }
 
+  /** 點擊世界或麵包屑：暫停、高亮、飛過去並顯示節點面板。 */
+  function selectNode(path: string) {
+    if (textMode) return;
+    pause();
+    world?.highlight([path]);
+    void world?.flyTo(path, 900);
+    showPanel(renderNodePanel(path, week, index));
+  }
+
   function toggleStoryline(id: string) {
     storyline = storyline === id ? null : id;
-    const ids = new Set<EntityId>();
-    if (storyline) for (const ev of week.events) if (ev.storylines.includes(storyline)) ev.entities.forEach((e) => ids.add(e));
+    const ids = new Set<string>();
+    if (storyline) for (const ev of week.events) if (ev.storylines.includes(storyline)) ev.places.forEach((p) => ids.add(p));
     world?.highlight([...ids]);
     syncTimeline();
   }
@@ -395,9 +403,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (w && changed) {
       w.effects.clear();
       w.highlight([]);
+      w.setWeekFocus(week.events.flatMap((e) => e.places));
       if (first) w.setParams(paramsFor(week));
       else void w.tweenTo(paramsFor(week), 2000);
-      if (!eventId) void w.resetCamera(first ? 0 : 1100);
+      if (!eventId) void (first && isNarrow() ? w.focusAsiaPacific(0) : w.resetCamera(first ? 0 : 1100));
     }
 
     if (textMode) {
@@ -429,6 +438,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       if (w) {
         w.effects.clear();
         w.highlight([]);
+        w.setWeekFocus(week.events.flatMap((e) => e.places));
         w.setParams(paramsFor(week));
         void w.resetCamera(0);
       }
@@ -457,6 +467,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   window.addEventListener('hashchange', () => void routeFromHash());
+
+  // E2E 測試鉤子：只在 ?test=1 時暴露。
+  if (new URLSearchParams(location.search).has('test')) {
+    Object.assign(window, { __econ: { pick: (path: string) => selectNode(path), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
+  }
 
   document.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement;

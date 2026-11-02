@@ -1,4 +1,5 @@
 import type { WatchItem, WeekData } from '../data/types';
+import type { EntityRecord } from '../world/registry';
 import { el } from './dom';
 import { renderEventCard } from './eventCard';
 import { shortDate } from './format';
@@ -11,11 +12,11 @@ export function renderWatchlist(items: WatchItem[]): HTMLElement {
   ));
 }
 
-export function renderTextMode(week: WeekData, order: string[]): HTMLElement {
+export function renderTextMode(week: WeekData, order: string[], entities: EntityRecord[]): HTMLElement {
   const byId = new Map(week.events.map((e) => [e.id, e]));
   const ordered = order.map((id) => byId.get(id)).filter((e) => e !== undefined);
   const root = el('section', { class: 'text-mode' }, el('h2', {}, week.title));
-  ordered.forEach((ev, i) => root.append(renderEventCard(ev, { index: i, total: ordered.length })));
+  ordered.forEach((ev, i) => root.append(renderEventCard(ev, { index: i, total: ordered.length }, entities)));
   if (week.links.length > 0) {
     root.append(el('h3', { class: 'section-title' }, '因果連線'), el('ul', { class: 'links' }, ...week.links.map((l) =>
       el('li', {}, `${byId.get(l.from)?.title ?? l.from} → ${byId.get(l.to)?.title ?? l.to}（${l.label}）`),

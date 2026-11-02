@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import type { Weather } from '../world/visualParams';
+import type { Weather } from '../world/indicators';
 
 export type ColorMode = 'tw' | 'intl';
 
