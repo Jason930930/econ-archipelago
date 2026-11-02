@@ -1,4 +1,5 @@
 import { resolveIndicators, type ResolvedIndicators } from './indicators';
+import { CHANNEL_NODES } from '../world/channels';
 import { districtsFor } from '../world/districts';
 import { ancestorsOf, parsePath } from '../world/paths';
 import { REGION_IDS, type RegionId } from '../world/regions';
@@ -47,6 +48,8 @@ export function buildIndex(weeks: WeekData[], seed: EntityRecord[]): ArchiveInde
     for (const x of w.watchlist) x.places.forEach(reference);
   }
   for (const e of entities) referenced.get(e.region)?.add(e.sector);
+  // 傳導管道的端點區塊一定要畫出來，否則管線會接到島心。
+  for (const n of CHANNEL_NODES) reference(n.path);
   const districts = Object.fromEntries(REGION_IDS.map((r) => [r, districtsFor(r, referenced.get(r)!)])) as Record<RegionId, SectorId[]>;
 
   return {

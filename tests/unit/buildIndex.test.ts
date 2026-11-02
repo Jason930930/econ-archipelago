@@ -49,7 +49,7 @@ test('districts include a referenced non-default sector', () => {
   const w = makeWeek('2026-11-06', { events: [makeEvent({ primary: 'jp/real-estate', places: ['jp/real-estate'] })] });
   const idx = buildIndex([w]);
   expect(idx.districts.jp).toContain('real-estate');
-  expect(idx.districts.tw).toEqual(['central-bank', 'government', 'equity', 'fx', 'semiconductor']);
+  expect(idx.districts.tw).toEqual(['central-bank', 'government', 'trade', 'equity', 'fx', 'semiconductor']);
   expect(idx.districts.seas).toEqual(['shipping-lane']);
 });
 
