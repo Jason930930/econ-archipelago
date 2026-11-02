@@ -57,6 +57,34 @@ a { color: var(--accent); }
 .state-badge.unknown { background: rgba(255, 255, 255, 0.7); color: #5d6875; border-color: #8a96a3; }
 .state-badge.stale { opacity: 0.55; border-style: dashed; }
 .state-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.state-chip {
+  display: inline-block; font: 600 11px/16px var(--font); color: #fff; background: #8a96a3; border-radius: 8px;
+  padding: 0 6px; margin: 0 6px; vertical-align: middle; white-space: nowrap;
+}
+.state-chip.no-level, .state-chip.unknown { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.state-chip.stale { opacity: 0.6; }
+.state-card { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+.state-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.state-card p { margin: 4px 0; }
+.state-value { font-size: 18px; font-weight: 700; }
+.state-value .muted { font-size: 12px; font-weight: 400; margin-left: 6px; }
+.state-range { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin: 4px 0; }
+.state-range-track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #4a90d9 0 20%, #8a96a3 20% 80%, #e0a030 80% 100%); opacity: 0.8; }
+.state-range-marker { position: absolute; top: -4px; width: 4px; height: 14px; margin-left: -2px; border-radius: 2px; background: var(--text); }
+.state-spark { width: 100%; height: 40px; display: block; margin: 4px 0; }
+.state-spark .spark-line { stroke: var(--accent); stroke-width: 1.6; }
+.state-basis { border-left: 3px solid var(--border); padding-left: 8px; }
+.state-source-line { font-size: 12px; color: var(--muted); }
+.state-source { color: var(--accent); }
+.state-evidence { font: inherit; font-size: 12px; color: var(--accent); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; cursor: pointer; }
+.state-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.state-row { width: 100%; display: grid; grid-template-columns: 1fr auto 6.5em 3.2em; align-items: center; gap: 4px; text-align: left; font: inherit; font-size: 13px; color: var(--text); background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; cursor: pointer; }
+.state-row:hover { border-color: var(--accent); }
+.state-row .state-chip { margin: 0; }
+.state-row-value { text-align: right; font-variant-numeric: tabular-nums; }
+.state-row-date { text-align: right; font-size: 11px; }
+.state-summary { font-weight: 600; }
+.state-transitions { margin-top: 12px; }
 .channel-legend {
   position: absolute; left: 16px; bottom: calc(var(--bottombar-h, 0px) + 64px); width: 220px; max-width: calc(100vw - 32px);
   font: 12px/1.45 var(--font); color: var(--text); background: var(--surface); border: 1px solid var(--border);

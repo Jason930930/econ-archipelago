@@ -9,6 +9,8 @@ import { createControls, type ControlsView } from './controls';
 import { el } from './dom';
 import { renderActiveChannels, renderChannelPanel, renderProposalList, renderProposalPanel } from './channelPanel';
 import { renderEventCard } from './eventCard';
+import { renderTransitions, renderWorldState, statesFor } from './stateCard';
+import { stateTransitions } from '../world/state';
 import { FAMILY_INFO, getChannel, getChannelNode } from '../world/channels';
 import { hoverInfo } from './hover';
 import { renderNodePanel } from './nodePanel';
@@ -89,13 +91,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const textBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'text-mode' }, '文字模式');
   const colorBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'color-mode' });
   const networkBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'network', title: '顯示所有常駐傳導管道' }, '傳導網絡');
+  const stateBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'state', title: '36 個節點的目前狀態' }, '世界狀態');
   if (!webgl) {
     textBtn.disabled = true;
     textBtn.title = '此瀏覽器不支援 WebGL，只能使用文字模式';
   }
   const topbar = el('header', { class: 'topbar' },
     el('div', { class: 'brand' }, el('h1', {}, '經濟群島'), weekTitle, el('p', { class: 'disclaimer' }, DISCLAIMER)),
-    el('div', { class: 'tools' }, networkBtn, textBtn, colorBtn),
+    el('div', { class: 'tools' }, stateBtn, networkBtn, textBtn, colorBtn),
   );
   const stage = el('div', { class: 'stage' });
   const canvas = el('canvas', { 'aria-label': '經濟群島 3D 世界' });
@@ -195,8 +198,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
       el('h3', {}, `${week.events.length} 件大事（依因果順序）`),
       el('p', { class: 'muted' }, '按 ▶ 播放，世界會依因果順序演出每則事件；也可以點擊地標或下方的主線探索。'),
       list,
+      transitionsPanel(),
       renderActiveChannels(week.weekId, index),
     );
+  }
+
+  /** 與上一週相比，水準或方向改變的節點。第一週不顯示。 */
+  function transitionsPanel(): HTMLElement | null {
+    const i = weekIds.indexOf(week.weekId);
+    if (i <= 0) return null;
+    return renderTransitions(stateTransitions(index.state.byWeek[weekIds[i - 1]!] ?? {}, statesFor(week.weekId, index)), index);
   }
 
   function finalePanel(): HTMLElement {
@@ -233,6 +244,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     colorBtn.textContent = colorMode === 'tw' ? '紅漲綠跌' : '綠漲紅跌';
     networkBtn.setAttribute('aria-pressed', String(networkMode));
     networkBtn.hidden = textMode;
+    stateBtn.hidden = textMode;
     channelLegend.hidden = textMode || !networkMode;
     colorBtn.title = '切換漲跌配色';
     document.documentElement.dataset.colorMode = colorMode;
@@ -248,7 +260,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function renderText(focusEvent: string | null) {
-    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week), index.entities) : '');
+    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week), index.entities, statesFor(week.weekId, index)) : '');
     if (textMode && focusEvent) textRoot.querySelector(`[data-event-id="${CSS.escape(focusEvent)}"]`)?.scrollIntoView({ block: 'start' });
   }
 
@@ -308,6 +320,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const pending = proposalsFor(week.weekId);
     proposalBtn.textContent = `待審提議 ${pending.length} 項`;
     world?.setChannelActivity(index.channels.byWeek[week.weekId] ?? {}, pending);
+    world?.setNodeStates(statesFor(week.weekId, index));
   }
 
   function paramsFor(w: WeekData) {
@@ -513,6 +526,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
   });
 
+  stateBtn.addEventListener('click', () => {
+    if (textMode) return;
+    pause();
+    showPanel(renderWorldState(statesFor(week.weekId, index), index));
+  });
+
   networkBtn.addEventListener('click', () => {
     networkMode = !networkMode;
     writePref(NETWORK_KEY, networkMode ? '1' : '0');
@@ -541,7 +560,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // E2E 測試鉤子：只在 ?test=1 時暴露。
   if (new URLSearchParams(location.search).has('test')) {
-    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), pickChannel: (id: string) => selectChannel(id), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
+    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), pickChannel: (id: string) => selectChannel(id), nodeState: (id: string) => statesFor(week.weekId, index)[id] ?? null, cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
   }
 
   document.addEventListener('keydown', (e) => {

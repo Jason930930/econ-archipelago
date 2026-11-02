@@ -9,6 +9,7 @@ import { labelOf } from '../world/registry';
 import { getSector, isSectorId } from '../world/sectors';
 import { channelsTouching } from '../world/channels';
 import { renderNodeChannels } from './channelPanel';
+import { renderNodeStates, statesFor } from './stateCard';
 import { el, svg } from './dom';
 import { formatIndicator, INDICATOR_LABELS, shortDate } from './format';
 
@@ -92,6 +93,9 @@ export function renderNodePanel(path: string, week: WeekData, index: ArchiveInde
     }
     panel.append(list);
   }
+
+  const nodeStates = renderNodeStates(path, statesFor(week.weekId, index), index, week.weekId);
+  if (nodeStates) panel.append(nodeStates);
 
   const channels = renderNodeChannels(channelsTouching(path), week.weekId, index);
   if (channels) panel.append(channels);

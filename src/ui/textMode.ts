@@ -3,7 +3,9 @@ import type { EntityRecord } from '../world/registry';
 import { weekIntensity } from '../world/activation';
 import { getChannel } from '../world/channels';
 import { channelName } from './channelPanel';
+import type { NodeState } from '../world/state';
 import { el } from './dom';
+import { renderTextWorldState } from './stateCard';
 import { renderEventCard } from './eventCard';
 import { shortDate } from './format';
 
@@ -15,7 +17,7 @@ export function renderWatchlist(items: WatchItem[]): HTMLElement {
   ));
 }
 
-export function renderTextMode(week: WeekData, order: string[], entities: EntityRecord[]): HTMLElement {
+export function renderTextMode(week: WeekData, order: string[], entities: EntityRecord[], states?: Record<string, NodeState>): HTMLElement {
   const byId = new Map(week.events.map((e) => [e.id, e]));
   const ordered = order.map((id) => byId.get(id)).filter((e) => e !== undefined);
   const root = el('section', { class: 'text-mode' }, el('h2', {}, week.title));
@@ -31,6 +33,7 @@ export function renderTextMode(week: WeekData, order: string[], entities: Entity
       el('li', {}, el('strong', {}, channelName(id)), `：${getChannel(id)!.mechanism}`),
     )));
   }
+  if (states) root.append(el('h3', { class: 'section-title' }, '世界狀態'), renderTextWorldState(states));
   if (week.watchlist.length > 0) root.append(el('h3', { class: 'section-title' }, '下週值得關注'), renderWatchlist(week.watchlist));
   return root;
 }
