@@ -5,7 +5,7 @@ const LEGEND = '島嶼大小約與 GDP 成正比（約略值）；為避免重�
 async function ready(page: Page, url: string) {
   await page.goto(url);
   await expect(page.locator('.stage canvas')).toBeVisible();
-  await page.waitForFunction(() => (window as unknown as { __econ?: { world: () => unknown } }).__econ?.world() != null);
+  await page.waitForFunction(() => (window as unknown as { __econ?: { ready: boolean; world: () => unknown } }).__econ?.ready === true && (window as unknown as { __econ: { world: () => unknown } }).__econ.world() != null);
 }
 
 const pick = (page: Page, path: string) => page.evaluate((p) => (window as unknown as { __econ: { pick: (p: string) => void } }).__econ.pick(p), path);
@@ -14,7 +14,7 @@ const crumbs = (page: Page) => page.locator('.panel .breadcrumb button').allText
 test('clicking TSMC selects its path', async ({ page }) => {
   await ready(page, './?test=1#/2026-10-30');
   await pick(page, 'tw/semiconductor/tsmc');
-  await expect.poll(() => crumbs(page)).toEqual(['台灣', '半導體', '台積電']);
+  await expect.poll(() => crumbs(page), { timeout: 10_000 }).toEqual(['台灣', '半導體', '台積電']);
 });
 
 test('region panel lists the TSMC event', async ({ page }) => {
@@ -27,7 +27,7 @@ test('breadcrumb navigates up a level', async ({ page }) => {
   await ready(page, './?test=1#/2026-10-30');
   await pick(page, 'tw/semiconductor/tsmc');
   await page.locator('.panel .breadcrumb button', { hasText: '半導體' }).click();
-  await expect.poll(() => crumbs(page)).toEqual(['台灣', '半導體']);
+  await expect.poll(() => crumbs(page), { timeout: 10_000 }).toEqual(['台灣', '半導體']);
 });
 
 test('region-level event plays', async ({ page }) => {
@@ -67,7 +67,7 @@ test('synthetic entity and new district appear', async ({ page, request }) => {
   test.skip(!registry.some((e) => e.id === 'synthetic-co'), '只在 CI 演練（含合成週）時執行');
   await ready(page, './?test=1');
   await pick(page, 'in/tech/synthetic-co');
-  await expect.poll(() => crumbs(page)).toEqual(['印度', '科技', '演練公司']);
+  await expect.poll(() => crumbs(page), { timeout: 10_000 }).toEqual(['印度', '科技', '演練公司']);
   const hasDistrict = await page.evaluate(() => (window as unknown as { __econ: { world: () => { graph: { get: (p: string) => unknown } } } }).__econ.world().graph.get('jp/real-estate') !== undefined);
   expect(hasDistrict).toBe(true);
 });

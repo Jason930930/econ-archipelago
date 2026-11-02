@@ -470,7 +470,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // E2E 測試鉤子：只在 ?test=1 時暴露。
   if (new URLSearchParams(location.search).has('test')) {
-    Object.assign(window, { __econ: { pick: (path: string) => selectNode(path), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
+    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
   }
 
   document.addEventListener('keydown', (e) => {
@@ -486,4 +486,6 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // ---------- 首次載入：依網址決定週與事件 ----------
   if (!(await routeFromHash())) root.replaceChildren(el('div', { class: 'load-error' }, '資料載入失敗。'));
+  const hook = (window as unknown as { __econ?: { ready: boolean } }).__econ;
+  if (hook) hook.ready = true;
 }
