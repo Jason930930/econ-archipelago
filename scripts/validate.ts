@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { validateArchive, type ValidationError } from '../src/data/validate';
+import { checkNewEntities, type EntityRecord } from '../src/world/registry';
 
 const dir = process.argv[2] ?? 'data/weeks';
 let names: string[] = [];
@@ -25,7 +26,16 @@ const files = names.flatMap((fileName) => {
   }
 });
 
-const errors = [...parseErrors, ...validateArchive(files)];
+const SEED = process.env.SEED_FILE ?? 'data/world/entities.json';
+let seed: EntityRecord[] = [];
+try {
+  seed = JSON.parse(readFileSync(SEED, 'utf8')) as EntityRecord[];
+} catch (e) {
+  parseErrors.push({ file: 'entities.json', path: '/', message: `種子實體檔讀取失敗：${(e as Error).message}` });
+}
+const seedErrors: ValidationError[] = checkNewEntities([], seed).map((i) => ({ file: 'entities.json', path: `/${i.index}/${i.field}`, message: i.message }));
+
+const errors = [...parseErrors, ...seedErrors, ...validateArchive(files, seed)];
 if (errors.length > 0) {
   for (const e of errors) console.error(`${e.file} ${e.path}: ${e.message}`);
   console.error(`✗ ${errors.length} 個錯誤`);

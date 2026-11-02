@@ -1,27 +1,46 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { validateArchive, validateWeek } from '../../src/data/validate';
-import { ENTITY_IDS } from '../../src/world/entities';
 import { INDICATOR_KEYS } from '../../src/data/types';
+import { PATH_PATTERN } from '../../src/world/paths';
+import type { EntityRecord } from '../../src/world/registry';
 
 const base = () => JSON.parse(readFileSync('tests/fixtures/valid-week.json', 'utf8'));
 const FILE = '2026-10-30.json';
 const none = new Set<string>();
+const seed = JSON.parse(readFileSync('data/world/entities.json', 'utf8')) as EntityRecord[];
+const ctx = { knownStorylines: none, entities: seed };
 
 function expectError(mutate: (w: any) => void, pathPart: string, file = FILE) {
   const w = base();
   mutate(w);
-  const errs = validateWeek(w, file, none);
+  const errs = validateWeek(w, file, ctx);
   expect(errs.length, JSON.stringify(errs)).toBeGreaterThan(0);
   expect(errs.some((e) => e.path.includes(pathPart)), JSON.stringify(errs)).toBe(true);
 }
 
 describe('validateWeek', () => {
   test('valid fixture has no errors', () => {
-    expect(validateWeek(base(), FILE, none)).toEqual([]);
+    expect(validateWeek(base(), FILE, ctx)).toEqual([]);
   });
-  test('unknown entity', () => expectError((w) => { w.events[0].entities.push('tw-memory'); }, '/events/0/entities'));
-  test('primaryEntity not in entities', () => expectError((w) => { w.events[0].primaryEntity = 'us-fed'; }, '/events/0/primaryEntity'));
+  test('v1 file rejected with guide hint', () => {
+    const w = base(); w.schemaVersion = 1;
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.message).toContain('schemaVersion 2');
+  });
+  test('malformed path', () => expectError((w) => { w.events[0].places.push('TW/Semi'); }, '/events/0/places'));
+  test('unknown region', () => expectError((w) => { w.events[0].places.push('xx/equity'); }, '/events/0/places/4'));
+  test('sector not allowed in region', () => expectError((w) => { w.events[0].places.push('tw/shipping-lane'); }, '/events/0/places/4'));
+  test('entity must match path', () => expectError((w) => { w.events[0].places.push('jp/semiconductor/tsmc'); }, '/events/0/places/4'));
+  test('primary must be in places', () => expectError((w) => { w.events[0].primary = 'us/bonds'; }, '/events/0/primary'));
+  test('entity introduced this week can be referenced', () => expect(validateWeek(base(), FILE, ctx)).toEqual([]));
+  test('newEntities collision reported at its index', () => expectError((w) => { w.newEntities.push({ id: 'tsmc-x', name: 'tsmc', region: 'tw', sector: 'semiconductor', aliases: [] }); }, '/newEntities/1/name'));
+  test('watchlist places validated', () => expectError((w) => { w.watchlist[0].places = ['zz']; }, '/watchlist/0/places/0'));
+  test('region-only primary is fine', () => {
+    const w = base(); w.events[0].primary = 'us'; w.events[0].places.push('us');
+    expect(validateWeek(w, FILE, ctx)).toEqual([]);
+  });
   test('weekId differs from file name', () => expectError(() => {}, '/weekId', '2026-10-23.json'));
   test('period.end differs from weekId', () => expectError((w) => { w.period.end = '2026-10-29'; }, '/period/end'));
   test('start after end', () => expectError((w) => { w.period.start = '2026-10-31'; }, '/period/start'));
@@ -39,7 +58,7 @@ describe('validateWeek', () => {
   test('weekId must be a Friday', () => {
     const w = base();
     w.weekId = '2026-10-29'; w.period = { start: '2026-10-23', end: '2026-10-29' };
-    const errs = validateWeek(w, '2026-10-29.json', none);
+    const errs = validateWeek(w, '2026-10-29.json', ctx);
     expect(errs.some((e) => e.path === '/weekId' && e.message.includes('週五'))).toBe(true);
   });
   test('impossible calendar date rejected', () => expectError((w) => { w.events[0].date = '2026-02-30'; }, '/events/0/date'));
@@ -47,42 +66,61 @@ describe('validateWeek', () => {
   test('missing indicator keys allowed', () => {
     const w = base();
     w.indicators = {};
-    expect(validateWeek(w, FILE, none)).toEqual([]);
+    expect(validateWeek(w, FILE, ctx)).toEqual([]);
   });
   test('unknown indicator key rejected', () => expectError((w) => { w.indicators.eth = { value: 1 }; }, '/indicators'));
   test('non-object input reports error', () => {
-    expect(validateWeek(null, FILE, none).length).toBeGreaterThan(0);
+    expect(validateWeek(null, FILE, ctx).length).toBeGreaterThan(0);
   });
 });
 
 describe('validateArchive', () => {
+  const earlier = () => {
+    const w = base();
+    w.weekId = '2026-10-23'; w.period = { start: '2026-10-17', end: '2026-10-23' };
+    return w;
+  };
+  const later = () => {
+    const w = base();
+    delete w.newEntities; // example-co 已在較早週新增
+    return w;
+  };
   test('storyline defined in an earlier week is accepted', () => {
-    const w1 = base();
-    w1.weekId = '2026-10-23'; w1.period = { start: '2026-10-17', end: '2026-10-23' };
+    const w1 = earlier();
     w1.storylines.push({ id: 'hormuz-tension', name: '荷莫茲緊張' });
-    const w2 = base();
+    const w2 = later();
     w2.events[1].storylines = ['hormuz-tension'];
-    expect(validateArchive([{ fileName: FILE, raw: w2 }, { fileName: '2026-10-23.json', raw: w1 }])).toEqual([]);
+    expect(validateArchive([{ fileName: FILE, raw: w2 }, { fileName: '2026-10-23.json', raw: w1 }], seed)).toEqual([]);
   });
   test('storyline defined only in a later week is rejected', () => {
-    const w1 = base();
-    w1.weekId = '2026-10-23'; w1.period = { start: '2026-10-17', end: '2026-10-23' };
+    const w1 = earlier();
     w1.events[1].storylines = ['hormuz-tension'];
-    const w2 = base();
+    const w2 = later();
     w2.storylines.push({ id: 'hormuz-tension', name: '荷莫茲緊張' });
-    const errs = validateArchive([{ fileName: '2026-10-23.json', raw: w1 }, { fileName: FILE, raw: w2 }]);
+    const errs = validateArchive([{ fileName: '2026-10-23.json', raw: w1 }, { fileName: FILE, raw: w2 }], seed);
     expect(errs.some((e) => e.file === '2026-10-23.json')).toBe(true);
   });
+  test('entity introduced in a later week cannot be referenced earlier', () => {
+    const w1 = earlier();
+    delete w1.newEntities;
+    const w2 = base();
+    const errs = validateArchive([{ fileName: '2026-10-23.json', raw: w1 }, { fileName: FILE, raw: w2 }], seed);
+    expect(errs.some((e) => e.file === '2026-10-23.json' && e.path === '/events/0/places/3')).toBe(true);
+  });
+  test('same entity added in two weeks rejected', () => {
+    const errs = validateArchive([{ fileName: '2026-10-23.json', raw: earlier() }, { fileName: FILE, raw: base() }], seed);
+    expect(errs.some((e) => e.file === FILE && e.path === '/newEntities/0/id')).toBe(true);
+  });
   test('duplicate weekId across files rejected', () => {
-    const errs = validateArchive([{ fileName: FILE, raw: base() }, { fileName: FILE, raw: base() }]);
+    const errs = validateArchive([{ fileName: FILE, raw: base() }, { fileName: FILE, raw: base() }], seed);
     expect(errs.length).toBeGreaterThan(0);
   });
 });
 
 describe('schema stays in sync with code', () => {
   const schema = JSON.parse(readFileSync('schema/week.schema.json', 'utf8'));
-  test('schema entity enum equals ENTITY_IDS', () => {
-    expect([...schema.$defs.entityId.enum].sort()).toEqual([...ENTITY_IDS].sort());
+  test('schema path pattern equals PATH_PATTERN', () => {
+    expect(schema.$defs.path.pattern).toBe(PATH_PATTERN);
   });
   test('schema indicator keys equal INDICATOR_KEYS', () => {
     expect(Object.keys(schema.properties.indicators.properties).sort()).toEqual([...INDICATOR_KEYS].sort());

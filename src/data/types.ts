@@ -1,4 +1,4 @@
-import type { EntityId } from '../world/entities';
+import type { NewEntity } from '../world/registry';
 
 export const INDICATOR_KEYS = [
   'brent', 'wti', 'fedFunds', 'us10y', 'sp500', 'nasdaq', 'dow', 'taiex', 'cpiYoY', 'gold', 'btc', 'usdtwd',
@@ -40,8 +40,9 @@ export interface WeekEvent {
   why: string;
   discrepancy: string | null;
   taiwanImpact: TaiwanImpact | null;
-  primaryEntity: EntityId;
-  entities: EntityId[];
+  /** 最直接受衝擊的位置（路徑），必須包含在 places 中。 */
+  primary: string;
+  places: string[];
   sentiment: number;
   storylines: string[];
   metrics: Metric[];
@@ -62,12 +63,12 @@ export interface StorylineDef {
 export interface WatchItem {
   date: string | null;
   text: string;
-  entities: EntityId[];
+  places: string[];
   confirmed: boolean;
 }
 
 export interface WeekData {
-  schemaVersion: 1;
+  schemaVersion: 2;
   weekId: string;
   period: { start: string; end: string };
   title: string;
@@ -76,4 +77,6 @@ export interface WeekData {
   links: CausalLink[];
   storylines: StorylineDef[];
   watchlist: WatchItem[];
+  /** 本週第一次出現的第 3 層實體。 */
+  newEntities?: NewEntity[];
 }
