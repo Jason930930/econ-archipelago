@@ -1,0 +1,56 @@
+name: 驗證並部署經濟群島
+
+on:
+  # 所有分支都跑驗證與測試（含排程推的 data/week-* 分支），只有 main 會部署。
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 驗證週資料
+        run: npm run validate
+      - name: 型別檢查
+        run: npm run typecheck
+      - name: 單元測試
+        run: npm test
+      - name: 安裝 Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E 煙霧測試（含建置）
+        run: npm run e2e
+        env:
+          CI: true
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
