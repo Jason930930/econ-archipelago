@@ -11,6 +11,8 @@ import { createEffects, type Effects } from './effects';
 import { createGauge, type Gauge, type GaugeHost } from './gauges';
 import { buildShipping } from './layers/shipping';
 import { createChannelLayer } from './layers/channels';
+import { createStateBadges } from './layers/stateBadges';
+import type { NodeState } from '../world/state';
 import { createPickRaycaster } from './pick';
 import type { ChannelActivity, ProposalSummary } from '../world/activation';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
@@ -60,6 +62,8 @@ export interface WorldView {
   setNetworkMode(on: boolean): void;
   /** 管線上位置 t（0–1，預設中點）的螢幕座標（供測試）；找不到或不在畫面內時回傳 null。 */
   channelScreenPoint(id: string, t?: number): { x: number; y: number } | null;
+  /** 節點狀態徽章（子專案 3）。 */
+  setNodeStates(states: Record<string, NodeState>): void;
   onHover(cb: (path: string | null, screen: { x: number; y: number }) => void): void;
   readonly graph: WorldGraph;
   readonly effects: Effects;
@@ -266,14 +270,23 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       m.needsUpdate = true;
     });
   }
+  // 節點狀態徽章：點擊等同點擊該節點。
+  const badges = createStateBadges(graph, {
+    zoom: () => camera.zoom,
+    network: () => networkMode,
+    onClick: (path) => { for (const cb of pickCbs) cb({ kind: 'node', path }); },
+  });
+  root.add(badges.group);
   function rebuildChannels() {
     channels.rebuild();
+    badges.rebuild();
     applyFade();
   }
 
   stage.onFrame((dt, t) => {
     applyLod();
     channels.update(dt, t);
+    badges.update();
     for (const n of graph.all()) n.update(dt, t);
     for (const { gauge } of gauges.values()) gauge.update(dt, t);
     shipping.update(dt, t);
@@ -436,6 +449,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       channels.setActivity(a, proposals);
       applyFade();
     },
+    setNodeStates: (s) => badges.setStates(s),
     setNetworkMode(on) {
       networkMode = on;
       channels.setNetwork(on);
@@ -458,6 +472,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       canvas.removeEventListener('pointermove', onMove);
       for (const n of graph.all()) disposeObject(n.object);
       channels.dispose();
+      badges.dispose();
       legend.remove();
       stage.dispose();
     },
