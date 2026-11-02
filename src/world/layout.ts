@@ -65,3 +65,28 @@ export function layoutIslands(): Map<RegionId, IslandLayout> {
   cache = new Map(items.map((it) => [it.id, { center: it.pos, radius: it.radius, enlarged: it.enlarged, anchor: it.anchor }]));
   return cache;
 }
+
+const SEA_MARGIN = 0.6;
+
+/**
+ * 航道等海上位置：若落在島內（含 0.6 的岸邊），沿「島心 → 點」方向推到島外；
+ * 重複檢查直到不在任何島內（最多 20 次）。點與島心重合時往南推。
+ */
+export function placeAtSea(p: [number, number]): [number, number] {
+  const out: [number, number] = [p[0], p[1]];
+  for (let k = 0; k < 20; k++) {
+    let moved = false;
+    for (const l of layoutIslands().values()) {
+      const dx = out[0] - l.center[0], dz = out[1] - l.center[1];
+      const d = Math.hypot(dx, dz);
+      const need = l.radius + SEA_MARGIN;
+      if (d >= need - 1e-9) continue;
+      const [ux, uz] = d < 1e-9 ? [0, 1] : [dx / d, dz / d];
+      out[0] = l.center[0] + ux * (need + 1e-6);
+      out[1] = l.center[1] + uz * (need + 1e-6);
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  return out;
+}

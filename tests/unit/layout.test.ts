@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { districtSlots, districtsFor, pickVisibleEntities } from '../../src/world/districts';
-import { ISLAND_GAP, layoutIslands } from '../../src/world/layout';
+import { ISLAND_GAP, layoutIslands, placeAtSea } from '../../src/world/layout';
 import { getRegion, type RegionId } from '../../src/world/regions';
 import type { SectorId } from '../../src/world/sectors';
 
@@ -65,5 +65,19 @@ describe('districts', () => {
     expect(pickVisibleEntities([
       { id: 'b', mentioned: 9 }, { id: 'a', mentioned: 1 }, { id: 'z', mentioned: 0 }, { id: 'c', mentioned: 9 }, { id: 'd', mentioned: 5 },
     ], new Set(['z']))).toEqual(['z', 'b', 'c', 'd']);
+  });
+});
+
+describe('placeAtSea', () => {
+  test('points already at sea are unchanged', () => {
+    expect(placeAtSea([0, 30])).toEqual([0, 30]);
+  });
+  test('points inside an island are pushed just outside it', () => {
+    const tw = L.get('tw')!;
+    const p = placeAtSea([tw.center[0] - 0.5, tw.center[1]]);
+    const d = Math.hypot(p[0] - tw.center[0], p[1] - tw.center[1]);
+    expect(d).toBeGreaterThanOrEqual(tw.radius + 0.6);
+    expect(p[0]).toBeLessThan(tw.center[0]); // 沿原本方向推出
+    for (const l of L.values()) expect(Math.hypot(p[0] - l.center[0], p[1] - l.center[1])).toBeGreaterThanOrEqual(l.radius + 0.6 - 1e-6);
   });
 });

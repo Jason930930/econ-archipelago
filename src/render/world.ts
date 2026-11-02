@@ -1,15 +1,17 @@
 import * as THREE from 'three';
-import { districtSlots } from '../world/districts';
+import { districtSlots, pickVisibleEntities } from '../world/districts';
 import { project } from '../world/geo';
 import type { WorldParams } from '../world/indicators';
 import { lerpWorldParams } from '../world/indicators';
-import { layoutIslands, type IslandLayout } from '../world/layout';
+import { layoutIslands, placeAtSea, type IslandLayout } from '../world/layout';
 import { getRegion, type RegionId } from '../world/regions';
 import type { EntityRecord } from '../world/registry';
-import type { SectorId } from '../world/sectors';
+import { getSector, type SectorId } from '../world/sectors';
 import { createEffects, type Effects } from './effects';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
 import { buildDistrict, type DistrictNode } from './layers/district';
+import { buildEntityNode } from './layers/entity';
+import { LANDMARKS } from './landmarks';
 import { buildIslandTerrain, ISLAND_TOP_Y } from './layers/islandTerrain';
 import { labelObject } from './layers/labels';
 import { disposeObject, makeNode, tagPath } from './layers/nodeBase';
@@ -111,7 +113,35 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     for (const n of graph.all()) n.setState(highlighted.has(n.path) ? 'highlight' : dimmed.has(n.path) ? 'dim' : 'normal');
   }
 
-  /** L1：依區塊清單重建部門區塊（實體建築在 L2 加入）。 */
+  /** 各區塊目前顯示的實體（用來判斷 setWeekFocus 後哪些區塊需要重建）。 */
+  const shownEntities = new Map<string, string>();
+  const CORNERS: [number, number][] = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+  const LANE_PLOT = 1.6;
+
+  /** L2：區塊角落最多 4 棟實體建築（本週提到的優先）。 */
+  function buildEntities(d: DistrictNode, input: WorldBuildInput, onlyIfChanged = false): boolean {
+    const [region, sector] = d.path.split('/') as [RegionId, SectorId];
+    const candidates = input.entities
+      .filter((e) => e.region === region && e.sector === sector)
+      .map((e) => ({ id: e.id, mentioned: input.mentions[`${d.path}/${e.id}`] ?? 0 }));
+    const inWeek = new Set([...weekFocus].filter((p) => p.startsWith(`${d.path}/`)).map((p) => p.split('/')[2]!));
+    const visible = pickVisibleEntities(candidates, inWeek);
+    if (onlyIfChanged && shownEntities.get(d.path) === visible.join(',')) return false;
+    shownEntities.set(d.path, visible.join(','));
+    for (const c of graph.children(d.path)) graph.removeSubtree(c.path);
+    const center = d.object.getWorldPosition(new THREE.Vector3());
+    visible.forEach((id, i) => {
+      const e = input.entities.find((x) => x.id === id)!;
+      const [sx, sz] = CORNERS[i]!;
+      const at = new THREE.Vector3(center.x + sx * d.plot * 0.33, center.y + 0.12, center.z + sz * d.plot * 0.33);
+      const n = buildEntityNode(`${d.path}/${id}`, e, at, d.plot);
+      graph.add(n);
+      root.add(n.object);
+    });
+    return true;
+  }
+
+  /** L1：依區塊清單重建部門區塊與主建築，再交給 L2 放實體。 */
   function buildDistricts(input: WorldBuildInput) {
     for (const [id, layout] of layouts) {
       const sectors = input.districts[id] ?? [];
@@ -120,20 +150,28 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
         const path = `${id}/${sector}`;
         graph.removeSubtree(path);
         const at: [number, number] = [layout.center[0] + offsets[i]![0], layout.center[1] + offsets[i]![1]];
-        const d: DistrictNode = buildDistrict(path, sector, at, plot);
+        const landmark = LANDMARKS[getSector(sector).archetype]({ plot: plot * 0.5 });
+        const d: DistrictNode = buildDistrict(path, sector, at, plot, landmark);
         graph.add(d);
         root.add(d.object);
+        buildEntities(d, input);
       });
     }
     // 海域：沒有島，航道實體各自位於真實經緯度。
     graph.removeSubtree('seas');
     const lanes = input.entities.filter((e) => e.region === 'seas' && e.geo);
-    const pts = lanes.map((e) => project(e.geo!.lat, e.geo!.lon));
+    const pts = lanes.map((e) => placeAtSea(project(e.geo!.lat, e.geo!.lon)));
     const c = pts.length ? pts.reduce((a, p) => [a[0] + p[0] / pts.length, a[1] + p[1] / pts.length], [0, 0]) : [0, 0];
     for (const n of [virtualNode('seas', 'region', new THREE.Vector3(c[0], 0, c[1])), virtualNode('seas/shipping-lane', 'district', new THREE.Vector3(c[0], 0, c[1]))]) {
       graph.add(n);
       root.add(n.object);
     }
+    // 航道不受每區 4 棟上限，全部放在真實經緯度。
+    lanes.forEach((e, i) => {
+      const n = buildEntityNode(`seas/shipping-lane/${e.id}`, e, new THREE.Vector3(pts[i]![0], 0, pts[i]![1]), LANE_PLOT / 0.45);
+      graph.add(n);
+      root.add(n.object);
+    });
   }
 
   stage.onFrame((dt, t) => {
@@ -201,8 +239,14 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     },
     setWeekFocus(paths) {
       weekFocus = new Set(paths);
-      void weekFocus;
-      if (built) this.build(built);
+      if (!built) return;
+      // 只重建「可見實體有變動」的區塊。
+      let changed = false;
+      for (const n of graph.all()) {
+        if (n.kind !== 'district' || n.path.startsWith('seas')) continue;
+        changed = buildEntities(n as DistrictNode, built, true) || changed;
+      }
+      if (changed) applyStates();
     },
     setParams: apply,
     tweenTo(p, ms) {
