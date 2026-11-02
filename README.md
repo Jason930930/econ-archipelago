@@ -22,6 +22,20 @@
 
 ![台灣特寫與節點面板](docs/images/playing.png)
 
+### 常駐傳導網絡
+
+世界底下有一張常駐的**傳導網絡**：40 條精選的傳導管道（其中 11 條與台灣有關），例如「油價 → 美國通膨」「美國長天期殖利率 → 科技股估值（反向）」「美股 → 台股」「外資買賣超 → 新台幣」。
+
+- 每條管道有方向（同向或反向）、強度、時間落差（數日、數週、數月）與機制說明。這些是教科書層級的定性判斷，不是量化模型或預測。
+- 週報寫明的因果會在週檔標上管道，網站算出每條管道本週的**熱度**（本週強度＋上週熱度的一半，半衰期 1 週）。點亮的管道是亮管，裡面有流動的光點；連續兩週以上點亮時，光點會加速。沒有點亮的管道是半透明的暗管。
+- 播放時，因果連線若有標管道，粒子會沿著那條管線流動，管線也會短暫加亮。
+- 按頂欄的「傳導網絡」可以一次看到整張網：所有管道提亮、拉近時顯示名稱，島嶼與建築變淡。
+- 點擊管線會開出管道面板：兩端節點、方向、強度、機制、本週點亮它的事件，以及歷來點亮的週次。
+- 精選清單以外的關係，排程只能在週檔「提議」；提議以灰色虛線顯示為「待審提議」，不參與任何推演，經人工審閱才會收錄。
+- 收錄提議：在 `src/world/channels.ts` 的 `CHANNELS` 加一條管道，沿用提議的 id，起點與終點節點的路徑和提議的 `fromPath`、`toPath` 相同（需要時先在 `CHANNEL_NODES` 加節點）。舊週檔裡的提議不用改，驗證器會把它視為已收錄。
+
+![傳導網絡模式](docs/images/network.png)
+
 > 僅為資訊整理，不構成任何買賣或個人化投資建議。
 
 ## 功能
@@ -64,17 +78,17 @@
 data/weeks/*.json            每週資料 v2（唯一的資料來源）
 data/world/entities.json     種子實體（公司、組織、商品、航道）
 schema/week.schema.json      JSON Schema v2
-src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定（純邏輯）
+src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度（純邏輯）
 src/data/                    驗證、遷移、指標補值、索引（純邏輯）
 src/story/                   因果排序、播放狀態機（純邏輯）
 src/render/graph.ts          WorldGraph：以路徑索引的節點樹（地區 → 部門 → 實體）
-src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L5 標籤、航線
+src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L4 傳導管線、L5 標籤、航線
 src/render/landmarks/        18 種部門原型建築
 src/render/gauges/           8 種指標儀表（火焰、光柱、樓層、燈帶、光暈、閃爍、旗幟、熱霧）
-src/ui/                      節點面板（麵包屑）、事件卡、時間軸、控制列、文字模式、路由
+src/ui/                      節點面板（麵包屑）、管道面板、事件卡、時間軸、控制列、文字模式、路由
 ```
 
-所有地點都用路徑表示，所以傳導網絡、狀態鏡像、情境推演等後續功能可以直接用同一套路徑當節點。`render/` 只接收算好的儀表讀數（`{ level, trend, status }`），資料、世界版面與播放邏輯都能在 Node 中做單元測試。
+所有地點都用路徑表示，傳導網絡的節點也直接用這套路徑；後續的狀態鏡像與情境推演會沿用同一張網。`render/` 只接收算好的儀表讀數（`{ level, trend, status }`），資料、世界版面與播放邏輯都能在 Node 中做單元測試。
 
 技術：TypeScript、Vite、Three.js、ajv、Vitest、Playwright。
 
@@ -93,3 +107,5 @@ npm run build      # 驗證 → 產生索引 → 建置到 dist/
 
 - 規格：`docs/superpowers/specs/2026-11-02-econ-archipelago-design.md`
 - 實作計畫：`docs/superpowers/plans/2026-11-02-econ-archipelago.md`
+- 世界骨架 v2：`docs/superpowers/specs/2026-11-02-world-skeleton-v2-design.md`
+- 常駐傳導網絡：`docs/superpowers/specs/2026-11-02-transmission-network-design.md`、`docs/superpowers/plans/2026-11-02-transmission-network.md`

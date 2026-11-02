@@ -9,7 +9,7 @@ const base = () => JSON.parse(readFileSync('tests/fixtures/valid-week.json', 'ut
 const FILE = '2026-10-30.json';
 const none = new Set<string>();
 const seed = JSON.parse(readFileSync('data/world/entities.json', 'utf8')) as EntityRecord[];
-const ctx = { knownStorylines: none, entities: seed };
+const ctx = { knownStorylines: none, entities: seed, proposals: new Map() };
 
 function expectError(mutate: (w: any) => void, pathPart: string, file = FILE) {
   const w = base();
@@ -37,6 +37,42 @@ describe('validateWeek', () => {
   test('entity introduced this week can be referenced', () => expect(validateWeek(base(), FILE, ctx)).toEqual([]));
   test('newEntities collision reported at its index', () => expectError((w) => { w.newEntities.push({ id: 'tsmc-x', name: 'tsmc', region: 'tw', sector: 'semiconductor', aliases: [] }); }, '/newEntities/1/name'));
   test('watchlist places validated', () => expectError((w) => { w.watchlist[0].places = ['zz']; }, '/watchlist/0/places/0'));
+  test('unknown channel id on a link', () => expectError((w) => { w.links[0].channel = 'nope'; }, '/links/0/channel'));
+  test('unknown channel id on an event', () => expectError((w) => { w.events[0].channels = ['nope']; }, '/events/0/channels/0'));
+  test('link channel must touch both ends', () => {
+    const w = base(); w.links[0].channel = 'us-equity-to-tw-equity';
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/links/0/channel' && e.message.includes('起點')), JSON.stringify(errs)).toBe(true);
+  });
+  test('link channel that touches both ends is fine', () => {
+    const w = base(); w.links[0] = { from: 'e2', to: 'e1', label: 'x', channel: 'oil-to-us-inflation' };
+    expect(validateWeek(w, FILE, ctx)).toEqual([]);
+  });
+  test('event channel must touch an end', () => expectError((w) => { w.events[1].channels = ['tsmc-to-tw-equity']; }, '/events/1/channels/0'));
+  test('duplicate event channel', () => expectError((w) => { w.events[0].channels = ['ai-capex-to-tw-semis', 'ai-capex-to-tw-semis']; }, '/events/0/channels'));
+  test('proposal id clashes with core channel', () => expectError((w) => { w.proposedChannels[0].id = 'oil-to-us-inflation'; }, '/proposedChannels/0/id'));
+  test('promoted proposal (same id and paths as a core channel) still validates', () => {
+    const w = base(); Object.assign(w.proposedChannels[0], { id: 'fed-to-us-yield', fromPath: 'us/central-bank', toPath: 'us/bonds' });
+    w.events[0].places.push('us/central-bank');
+    expect(validateWeek(w, FILE, ctx)).toEqual([]);
+  });
+  test('proposal reusing a core id with different paths is still rejected', () => {
+    const w = base(); Object.assign(w.proposedChannels[0], { id: 'fed-to-us-yield' });
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/proposedChannels/0/id'), JSON.stringify(errs)).toBe(true);
+  });
+  test('proposal duplicates a core pair', () => {
+    const w = base(); Object.assign(w.proposedChannels[0], { fromPath: 'us/central-bank', toPath: 'us/bonds' });
+    w.events[0].places.push('us/central-bank');
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/proposedChannels/0' && e.message.includes('fed-to-us-yield')), JSON.stringify(errs)).toBe(true);
+  });
+  test('proposal evidence must exist', () => expectError((w) => { w.proposedChannels[0].evidence = ['e9']; }, '/proposedChannels/0/evidence/0'));
+  test('proposal evidence must touch an end', () => expectError((w) => { w.proposedChannels[0].evidence = ['e2']; }, '/proposedChannels/0/evidence/0'));
+  test('proposal unresolvable path', () => expectError((w) => { w.proposedChannels[0].toPath = 'zz/tech'; }, '/proposedChannels/0/toPath'));
+  test('proposal same from/to', () => expectError((w) => { w.proposedChannels[0].toPath = 'jp/tech'; }, '/proposedChannels/0/toPath'));
+  test('proposal empty mechanism', () => expectError((w) => { w.proposedChannels[0].mechanism = ' '; }, '/proposedChannels/0/mechanism'));
+  test('proposal repeated id within a week', () => expectError((w) => { w.proposedChannels.push({ ...w.proposedChannels[0] }); }, '/proposedChannels/1/id'));
   test('region-only primary is fine', () => {
     const w = base(); w.events[0].primary = 'us'; w.events[0].places.push('us');
     expect(validateWeek(w, FILE, ctx)).toEqual([]);
@@ -110,6 +146,14 @@ describe('validateArchive', () => {
   test('same entity added in two weeks rejected', () => {
     const errs = validateArchive([{ fileName: '2026-10-23.json', raw: earlier() }, { fileName: FILE, raw: base() }], seed);
     expect(errs.some((e) => e.file === FILE && e.path === '/newEntities/0/id')).toBe(true);
+  });
+  test('proposal repeated across weeks must match', () => {
+    const w2 = later(); w2.proposedChannels[0].sign = -1;
+    const errs = validateArchive([{ fileName: '2026-10-23.json', raw: earlier() }, { fileName: FILE, raw: w2 }], seed);
+    expect(errs.some((e) => e.file === FILE && e.path === '/proposedChannels/0'), JSON.stringify(errs)).toBe(true);
+  });
+  test('proposal repeated across weeks consistently is fine', () => {
+    expect(validateArchive([{ fileName: '2026-10-23.json', raw: earlier() }, { fileName: FILE, raw: later() }], seed)).toEqual([]);
   });
   test('duplicate weekId across files rejected', () => {
     const errs = validateArchive([{ fileName: FILE, raw: base() }, { fileName: FILE, raw: base() }], seed);

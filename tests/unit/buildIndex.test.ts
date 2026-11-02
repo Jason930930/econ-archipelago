@@ -49,7 +49,7 @@ test('districts include a referenced non-default sector', () => {
   const w = makeWeek('2026-11-06', { events: [makeEvent({ primary: 'jp/real-estate', places: ['jp/real-estate'] })] });
   const idx = buildIndex([w]);
   expect(idx.districts.jp).toContain('real-estate');
-  expect(idx.districts.tw).toEqual(['central-bank', 'government', 'equity', 'fx', 'semiconductor']);
+  expect(idx.districts.tw).toEqual(['central-bank', 'government', 'trade', 'equity', 'fx', 'semiconductor']);
   expect(idx.districts.seas).toEqual(['shipping-lane']);
 });
 
@@ -64,4 +64,19 @@ test('entities merge seed and newEntities', () => {
   expect(idx.entities).toHaveLength(seed.length + 1);
   expect(idx.entities.at(-1)).toMatchObject({ id: 'micron', addedIn: '2026-11-06' });
   expect(idx.districts.us).toContain('memory');
+});
+
+test('index carries channel activation', () => {
+  const w = makeWeek('2026-10-30', { events: [makeEvent({ id: 'e1', channels: ['fed-to-us-yield'] })] });
+  const idx = buildIndex([w]);
+  expect(idx.channels.byWeek['2026-10-30']!['fed-to-us-yield']).toEqual({ intensity: 1, heat: 1, streak: 1 });
+  expect(idx.channels.proposals).toEqual([]);
+});
+
+test('proposal endpoints are drawn as districts', () => {
+  const w = makeWeek('2026-10-30', {
+    events: [makeEvent({ id: 'e1', places: ['us/tech'], primary: 'us/tech' })],
+    proposedChannels: [{ id: 'jp-tech-proposal', fromPath: 'jp/tech', toPath: 'us/tech', fromVar: 'a', toVar: 'b', sign: 1, mechanism: 'm', evidence: ['e1'] }],
+  });
+  expect(buildIndex([w]).districts.jp).toContain('tech');
 });

@@ -7,6 +7,8 @@ import { ancestorsOf, isWithin, parsePath } from '../world/paths';
 import { getRegion, isRegionId } from '../world/regions';
 import { labelOf } from '../world/registry';
 import { getSector, isSectorId } from '../world/sectors';
+import { channelsTouching } from '../world/channels';
+import { renderNodeChannels } from './channelPanel';
 import { el, svg } from './dom';
 import { formatIndicator, INDICATOR_LABELS, shortDate } from './format';
 
@@ -90,6 +92,9 @@ export function renderNodePanel(path: string, week: WeekData, index: ArchiveInde
     }
     panel.append(list);
   }
+
+  const channels = renderNodeChannels(channelsTouching(path), week.weekId, index);
+  if (channels) panel.append(channels);
 
   if (p?.sector && !p.entity) {
     const ents = index.entities.filter((e) => e.region === p.region && e.sector === p.sector);

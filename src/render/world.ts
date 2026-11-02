@@ -10,6 +10,9 @@ import { getSector, type SectorId } from '../world/sectors';
 import { createEffects, type Effects } from './effects';
 import { createGauge, type Gauge, type GaugeHost } from './gauges';
 import { buildShipping } from './layers/shipping';
+import { createChannelLayer } from './layers/channels';
+import { createPickRaycaster } from './pick';
+import type { ChannelActivity, ProposalSummary } from '../world/activation';
 import { WorldGraph, type NodeKind, type WorldNode } from './graph';
 import { buildDistrict, type DistrictNode } from './layers/district';
 import { buildEntityNode, type EntityNode } from './layers/entity';
@@ -28,6 +31,12 @@ export interface WorldBuildInput {
   mentions: Record<string, number>;
 }
 
+/** 點擊命中的對象：節點（路徑）、精選管道或提議管道。 */
+export type PickHit = { kind: 'node'; path: string } | { kind: 'channel'; id: string } | { kind: 'proposal'; id: string };
+
+/** 網絡模式下，島嶼與建築的不透明度。 */
+export const NETWORK_FADE = 0.35;
+
 export interface WorldView {
   build(input: WorldBuildInput): void;
   setWeekFocus(paths: string[]): void;
@@ -44,7 +53,13 @@ export interface WorldView {
   setLowPower(on: boolean): void;
   setTimeScale(s: number): void;
   setInsets(right: number, bottom: number): void;
-  onPick(cb: (path: string | null) => void): void;
+  onPick(cb: (hit: PickHit | null) => void): void;
+  /** 本週各管道活躍度與待審提議（提議以灰色虛線呈現）。 */
+  setChannelActivity(a: Record<string, ChannelActivity>, proposals: ProposalSummary[]): void;
+  /** 網絡模式：所有管道提亮並顯示名稱，島嶼與建築變淡。 */
+  setNetworkMode(on: boolean): void;
+  /** 管線上位置 t（0–1，預設中點）的螢幕座標（供測試）；找不到或不在畫面內時回傳 null。 */
+  channelScreenPoint(id: string, t?: number): { x: number; y: number } | null;
   onHover(cb: (path: string | null, screen: { x: number; y: number }) => void): void;
   readonly graph: WorldGraph;
   readonly effects: Effects;
@@ -230,17 +245,44 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
   legend.textContent = LEGEND_TEXT;
   overlay.append(legend);
 
+  // L4：常駐傳導網絡（管線）。端點依節點位置，所以區塊或實體重建後要重建。
+  const channels = createChannelLayer(graph, { lowPower: () => stage.lowPower, zoom: () => camera.zoom });
+  root.add(channels.group);
+  let networkMode = false;
+  const faded = new Map<THREE.Material, { transparent: boolean; opacity: number; depthWrite: boolean }>();
+  /** 網絡模式下把世界的 MeshStandardMaterial 調淡；關閉時恢復。 */
+  function applyFade() {
+    for (const [m, o] of faded) Object.assign(m, o);
+    faded.clear();
+    if (!networkMode) return;
+    root.traverse((o) => {
+      if (o === channels.group || o.parent === channels.group) return;
+      const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+      if (!m || !m.isMeshStandardMaterial || faded.has(m)) return;
+      faded.set(m, { transparent: m.transparent, opacity: m.opacity, depthWrite: m.depthWrite });
+      m.transparent = true;
+      m.opacity = Math.min(m.opacity, NETWORK_FADE);
+      m.depthWrite = false;
+      m.needsUpdate = true;
+    });
+  }
+  function rebuildChannels() {
+    channels.rebuild();
+    applyFade();
+  }
+
   stage.onFrame((dt, t) => {
     applyLod();
+    channels.update(dt, t);
     for (const n of graph.all()) n.update(dt, t);
     for (const { gauge } of gauges.values()) gauge.update(dt, t);
     shipping.update(dt, t);
   });
 
   // 拾取：沿父節點往上找第一個標了 path 的物件，因此回傳的是最深一層。
-  const raycaster = new THREE.Raycaster();
+  const raycaster = createPickRaycaster();
   const ndc = new THREE.Vector2();
-  function pickAt(clientX: number, clientY: number): string | null {
+  function pickAt(clientX: number, clientY: number): PickHit | null {
     const rect = canvas.getBoundingClientRect();
     ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
@@ -248,14 +290,19 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       let shown = true;
       for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) if (!o.visible) shown = false;
       if (!shown) continue;
+      const ud = hit.object.userData;
+      if (typeof ud.channel === 'string' || typeof ud.proposal === 'string') {
+        if (!ud.pickable) continue;
+        return typeof ud.channel === 'string' ? { kind: 'channel', id: ud.channel as string } : { kind: 'proposal', id: ud.proposal as string };
+      }
       for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
-        if (typeof o.userData.path === 'string') return o.userData.path as string;
+        if (typeof o.userData.path === 'string') return { kind: 'node', path: o.userData.path as string };
       }
     }
     return null;
   }
 
-  const pickCbs: ((p: string | null) => void)[] = [];
+  const pickCbs: ((p: PickHit | null) => void)[] = [];
   const hoverCbs: ((p: string | null, s: { x: number; y: number }) => void)[] = [];
   let down: { x: number; y: number } | null = null;
   const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
@@ -273,8 +320,9 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     hoverPending = true;
     requestAnimationFrame(() => {
       hoverPending = false;
-      const p = pickAt(e.clientX, e.clientY);
-      canvas.style.cursor = p ? 'pointer' : '';
+      const hit = pickAt(e.clientX, e.clientY);
+      const p = hit?.kind === 'node' ? hit.path : null;
+      canvas.style.cursor = hit ? 'pointer' : '';
       if (p !== lastHover || p) for (const cb of hoverCbs) cb(p, { x: e.clientX, y: e.clientY });
       lastHover = p;
     });
@@ -283,7 +331,11 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointermove', onMove);
 
-  const effects = createEffects({ stage, graph, colorMode: () => colorMode, focus: () => focus });
+  const effects = createEffects({
+    stage, graph, colorMode: () => colorMode, focus: () => focus,
+    channelCurve: (id) => channels.curve(id),
+    flashChannel: (id, ms) => channels.flash(id, ms),
+  });
 
   function apply(p: WorldParams) {
     current = p;
@@ -305,6 +357,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       buildDistricts(input);
       attachGauges();
       rebuildShipping();
+      rebuildChannels();
       applyStates();
       applyLod(true);
     },
@@ -319,6 +372,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       }
       if (changed) {
         attachGauges();
+        rebuildChannels();
         applyStates();
         applyLod(true);
       }
@@ -378,12 +432,32 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     setTimeScale: stage.setTimeScale,
     setInsets: stage.setInsets,
     onPick: (cb) => void pickCbs.push(cb),
+    setChannelActivity(a, proposals) {
+      channels.setActivity(a, proposals);
+      applyFade();
+    },
+    setNetworkMode(on) {
+      networkMode = on;
+      channels.setNetwork(on);
+      applyFade();
+    },
+    channelScreenPoint(id, t = 0.5) {
+      const c = channels.curve(id);
+      if (!c) return null;
+      const v = c.getPoint(t);
+      camera.updateMatrixWorld();
+      v.project(camera);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) return null;
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+    },
     onHover: (cb) => void hoverCbs.push(cb),
     dispose() {
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointermove', onMove);
       for (const n of graph.all()) disposeObject(n.object);
+      channels.dispose();
       legend.remove();
       stage.dispose();
     },

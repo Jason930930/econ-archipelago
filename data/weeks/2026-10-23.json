@@ -276,6 +276,9 @@
           "title": "Capital Futures",
           "url": "https://www.capitalfutures.com.tw/zh-tw/financial/breakingnewsarticle?contentid=c26101600603"
         }
+      ],
+      "channels": [
+        "foreign-flow-to-tw-equity"
       ]
     },
     {
@@ -317,12 +320,14 @@
     {
       "from": "e2",
       "to": "e3",
-      "label": "油價推升通膨、影響央行判斷"
+      "label": "油價推升通膨、影響央行判斷",
+      "channel": "oil-to-us-inflation"
     },
     {
       "from": "e3",
       "to": "e1",
-      "label": "融資成本壓抑科技股估值"
+      "label": "融資成本壓抑科技股估值",
+      "channel": "us-yield-to-tech"
     }
   ],
   "storylines": [],

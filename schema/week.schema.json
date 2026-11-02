@@ -212,6 +212,13 @@
               }
             }
           }
+        },
+        "channels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -365,6 +372,9 @@
           },
           "label": {
             "type": "string"
+          },
+          "channel": {
+            "type": "string"
           }
         }
       }
@@ -430,6 +440,56 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/newEntity"
+      }
+    },
+    "proposedChannels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "fromPath",
+          "toPath",
+          "fromVar",
+          "toVar",
+          "sign",
+          "mechanism",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fromPath": {
+            "$ref": "#/$defs/path"
+          },
+          "toPath": {
+            "$ref": "#/$defs/path"
+          },
+          "fromVar": {
+            "type": "string"
+          },
+          "toVar": {
+            "type": "string"
+          },
+          "sign": {
+            "enum": [
+              -1,
+              1
+            ]
+          },
+          "mechanism": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   }

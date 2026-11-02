@@ -34,7 +34,8 @@
   "links": [ … ],                               // 因果連線，見第 7 節
   "storylines": [ … ],                          // 本週「新出現」的主線定義，見第 8 節
   "watchlist": [ … ],                           // 下週值得關注，見第 9 節
-  "newEntities": [ … ]                          // 本週第一次出現的實體（可省略），見第 4 節
+  "newEntities": [ … ],                         // 本週第一次出現的實體（可省略），見第 4 節
+  "proposedChannels": [ … ]                     // 提議新的傳導管道（可省略），見第 11 節
 }
 ```
 
@@ -164,6 +165,7 @@
 | `storylines` | 主線 id 陣列，可為空 |
 | `metrics` | `[{ "label", "value", "change"? }]`，關鍵數字，皆為字串 |
 | `sources` | `[{ "title", "url" }]`，至少 1 個；url 必須是 `https://` 原始網址 |
+| `channels` | 選填：本則事件內點亮的精選管道 id（見第 11 節）；和 `taiwanImpact.channels` 不同，不可填中文 |
 
 `taiwanImpact` 格式：`{ "summary": "一句話改寫週報的台灣影響", "direction": -1 | 0 | 1, "channels": ["半導體", "台股", "匯率", …] }`；direction：對台灣市場偏負面 -1、中性 0、偏正面 +1。
 
@@ -187,6 +189,7 @@
 - `label` 10 字左右，用週報的說法。
 - 不可自己連到自己，不可形成循環（循環時網站會退回依 rank 播放）。
 - 沒有明確因果的週，`links` 可以是空陣列。
+- 這條因果正好走某條精選傳導管道時，加上 `"channel": "<管道 id>"`（見第 11 節）。
 
 ## 8. 主線（storylines）
 
@@ -360,6 +363,9 @@
           "title": "TheStreet",
           "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-oct-30-2026"
         }
+      ],
+      "channels": [
+        "ai-capex-to-tw-semis"
       ]
     },
     {
@@ -457,6 +463,9 @@
           "title": "Yahoo Finance（即時盤勢）",
           "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-october-30-dow-sp-500-nasdaq-amazon-intel-ai-sell-off-191429143.html"
         }
+      ],
+      "channels": [
+        "hormuz-to-oil"
       ]
     },
     {
@@ -568,22 +577,26 @@
     {
       "from": "e3",
       "to": "e5",
-      "label": "能源價格推升通膨"
+      "label": "能源價格推升通膨",
+      "channel": "oil-to-us-inflation"
     },
     {
       "from": "e5",
       "to": "e2",
-      "label": "通膨強化升息預期"
+      "label": "通膨強化升息預期",
+      "channel": "us-inflation-to-fed"
     },
     {
       "from": "e5",
       "to": "e1",
-      "label": "高利率壓縮科技股估值"
+      "label": "高利率壓縮科技股估值",
+      "channel": "us-yield-to-tech"
     },
     {
       "from": "e1",
       "to": "e4",
-      "label": "美科技股大跌拖累台股"
+      "label": "美科技股大跌拖累台股",
+      "channel": "us-equity-to-tw-equity"
     }
   ],
   "storylines": [],
@@ -661,3 +674,90 @@
   ]
 }
 ```
+
+## 11. 傳導管道（channel、channels、proposedChannels）
+
+網站上有一張常駐的「傳導網絡」：精選的管道（例如油價 → 美國通膨）一直都在，週資料負責標出**本週哪些管道被點亮**。管道清單由人工審閱，排程**不可以自己新增精選管道**，只能標註或提議。
+
+### 11.1 標註規則
+- **只在週報原文明寫了這條因果時才標註**，不要因為「理論上會影響」就標。
+- 優先標在因果連線上：`links[]` 加 `"channel": "<管道 id>"`。
+- 只有單一事件內的傳導（例如「台積電法說後股價收黑、台股週跌」）才標在事件上：`events[].channels: ["<管道 id>"]`，同一則事件不可重複。
+- **`events[].channels` 只能填精選管道 id**（下表第一欄，例如 `tsmc-to-tw-equity`）。`taiwanImpact.channels` 才是「半導體」「台股」這類中文描述，兩者不要混用。
+- 「碰到」的定義：事件的某個 place `p` 與管道節點路徑 `n` 滿足「`p` 在 `n` 之下」或「`n` 在 `p` 之下」（含相等）。例：`us/tech/meta` 碰到 `us/tech`，`us/central-bank` 碰到 `us`。
+- 連線上的 `channel`：起點事件必須有 place 碰到管道起點，終點事件必須有 place 碰到管道終點。
+- 事件上的 `channels`：事件必須有 place 碰到管道的起點或終點。
+- 碰不到時**不要硬標**（驗證會失敗），也不要為了標註去改 places。
+
+### 11.2 精選管道總表
+
+| 管道 id | 起點 | 終點 | 方向 |
+|---|---|---|---|
+| `mideast-to-hormuz` | 中東地緣衝突（`gulf/government`） | 荷莫茲航運風險（`seas/shipping-lane/hormuz`） | 同向 |
+| `hormuz-to-oil` | 荷莫茲航運風險（`seas/shipping-lane/hormuz`） | 油價（`gulf/energy`） | 同向 |
+| `opec-to-oil` | OPEC+ 供給（`intl/organization/opec`） | 油價（`gulf/energy`） | 反向 |
+| `red-sea-to-us-inflation` | 紅海航運風險（`seas/shipping-lane/red-sea`） | 美國通膨（`us`） | 同向 |
+| `mideast-to-gold` | 中東地緣衝突（`gulf/government`） | 金價（`intl/commodities/gold`） | 同向 |
+| `russia-to-eu-energy` | 俄羅斯能源供給（`ru/energy`） | 歐洲能源成本（`ez/energy`） | 反向 |
+| `oil-to-us-inflation` | 油價（`gulf/energy`） | 美國通膨（`us`） | 同向 |
+| `oil-to-eu-energy` | 油價（`gulf/energy`） | 歐洲能源成本（`ez/energy`） | 同向 |
+| `eu-energy-to-ez-inflation` | 歐洲能源成本（`ez/energy`） | 歐元區通膨（`ez`） | 同向 |
+| `us-inflation-to-fed` | 美國通膨（`us`） | Fed 政策利率（`us/central-bank`） | 同向 |
+| `fed-to-us-yield` | Fed 政策利率（`us/central-bank`） | 美債長天期殖利率（`us/bonds`） | 同向 |
+| `fed-to-dollar` | Fed 政策利率（`us/central-bank`） | 美元強弱（`us/fx`） | 同向 |
+| `fiscal-to-us-yield` | 美國財政赤字（`us/government`） | 美債長天期殖利率（`us/bonds`） | 同向 |
+| `ez-inflation-to-ecb` | 歐元區通膨（`ez`） | ECB 政策利率（`ez/central-bank`） | 同向 |
+| `boj-to-yen` | 日銀政策利率（`jp/central-bank`） | 日圓強弱（`jp/fx`） | 同向 |
+| `us-yield-to-yen` | 美債長天期殖利率（`us/bonds`） | 日圓強弱（`jp/fx`） | 反向 |
+| `fed-to-tw-policy-rate` | Fed 政策利率（`us/central-bank`） | 台灣央行利率（`tw/central-bank`） | 同向 |
+| `us-yield-to-tech` | 美債長天期殖利率（`us/bonds`） | 美國科技股估值（`us/tech`） | 反向 |
+| `us-yield-to-gold` | 美債長天期殖利率（`us/bonds`） | 金價（`intl/commodities/gold`） | 反向 |
+| `tech-to-us-equity` | 美國科技股估值（`us/tech`） | 美股大盤（`us/equity`） | 同向 |
+| `us-equity-to-tw-equity` | 美股大盤（`us/equity`） | 台股（`tw/equity`） | 同向 |
+| `us-equity-to-kr-equity` | 美股大盤（`us/equity`） | 韓股（`kr/equity`） | 同向 |
+| `us-equity-to-risk` | 美股大盤（`us/equity`） | 全球風險偏好（`intl`） | 同向 |
+| `risk-to-bitcoin` | 全球風險偏好（`intl`） | 比特幣（`intl/crypto/bitcoin`） | 同向 |
+| `dollar-to-twd` | 美元強弱（`us/fx`） | 新台幣強弱（`tw/fx`） | 反向 |
+| `dollar-to-gold` | 美元強弱（`us/fx`） | 金價（`intl/commodities/gold`） | 反向 |
+| `us-yield-to-foreign-flow` | 美債長天期殖利率（`us/bonds`） | 外資買賣超（`tw/equity`） | 反向 |
+| `foreign-flow-to-tw-equity` | 外資買賣超（`tw/equity`） | 台股（`tw/equity`） | 同向 |
+| `foreign-flow-to-twd` | 外資買賣超（`tw/equity`） | 新台幣強弱（`tw/fx`） | 同向 |
+| `ai-capex-to-tw-semis` | AI 資本支出（`us/tech`） | 台灣半導體景氣（`tw/semiconductor`） | 同向 |
+| `ai-capex-to-kr-memory` | AI 資本支出（`us/tech`） | 韓國記憶體景氣（`kr/memory`） | 同向 |
+| `tw-semis-to-tw-equity` | 台灣半導體景氣（`tw/semiconductor`） | 台股（`tw/equity`） | 同向 |
+| `tsmc-to-tw-equity` | 台積電營運（`tw/semiconductor/tsmc`） | 台股（`tw/equity`） | 同向 |
+| `tw-semis-to-exports` | 台灣半導體景氣（`tw/semiconductor`） | 台灣出口（`tw/trade`） | 同向 |
+| `kr-memory-to-kr-equity` | 韓國記憶體景氣（`kr/memory`） | 韓股（`kr/equity`） | 同向 |
+| `cn-industry-to-au` | 中國製造業（`cn/industry`） | 澳洲原物料出口（`au/commodities`） | 同向 |
+| `cn-property-to-industry` | 中國房地產（`cn/real-estate`） | 中國製造業（`cn/industry`） | 同向 |
+| `strait-to-tw-equity` | 台海緊張（`seas/shipping-lane/taiwan-strait`） | 台股（`tw/equity`） | 反向 |
+| `tariff-to-cn-industry` | 美國關稅（`us/trade`） | 中國製造業（`cn/industry`） | 反向 |
+| `tariff-to-us-inflation` | 美國關稅（`us/trade`） | 美國通膨（`us`） | 同向 |
+
+方向「同向」：起點上升 → 終點上升；「反向」：起點上升 → 終點下降。
+
+### 11.3 提議新管道（proposedChannels）
+只在**精選清單沒有**、而且**週報原文確實寫出因果**時才提議。提議只會以灰色虛線顯示為「待審提議」，不參與任何推演；**不填強度**。
+
+```json
+"proposedChannels": [
+  {
+    "id": "jp-rate-to-tw-equity",
+    "fromPath": "jp/central-bank",
+    "toPath": "tw/equity",
+    "fromVar": "日本政策利率",
+    "toVar": "台股",
+    "sign": -1,
+    "mechanism": "日銀升息引發日圓套利交易平倉，資金撤出亞股。",
+    "evidence": ["e3"]
+  }
+]
+```
+
+- `id`：小寫英文、數字與連字號；不可與精選管道 id 相同；同一週不可重複。之後的週再提議同一個 id 時，`fromPath`、`toPath`、`sign` 必須和第一次一致。
+- `fromPath`、`toPath`：第 3 節的路徑，必須可以解析，兩者不同；若正好等於某條精選管道的兩端，請改用那條管道標註。
+- `fromVar`、`toVar`：兩端的變數名稱（例：「日本政策利率」「台股」），不可為空。
+- `sign`：`1` 同向、`-1` 反向。
+- `mechanism`：一句話說明機制，用週報的說法，不可為空。
+- `evidence`：本週的事件 id（至少一個），每個事件的 place 都要碰到 `fromPath` 或 `toPath`。
+- 提議被收錄後（精選清單會用同一個 id 與兩端），舊週檔裡的提議保持原樣即可；之後的週直接用該管道標註，不要再提議。

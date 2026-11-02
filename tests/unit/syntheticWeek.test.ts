@@ -28,3 +28,28 @@ test('does not re-add an entity that already exists in the latest week', () => {
   w.newEntities = [{ id: 'synthetic-co', name: '演練公司', region: 'in', sector: 'tech', aliases: [] }];
   expect(synthesizeNextWeek(w).newEntities ?? []).toEqual([]);
 });
+
+test('synthetic week tags a channel on rank 1 and proposes at most one channel', () => {
+  const next = synthesizeNextWeek(latest);
+  const r1 = next.events.find((e) => e.rank === 1)!;
+  expect(r1.channels?.length ?? 0).toBeGreaterThanOrEqual(1);
+  expect(next.proposedChannels?.length ?? 0).toBeLessThanOrEqual(1);
+  expect(next.proposedChannels?.[0]?.id).toBe('synthetic-proposal');
+});
+
+test('synthetic proposal never duplicates a core pair', () => {
+  const w = structuredClone(latest);
+  const r1 = w.events.find((e) => e.rank === 1)!;
+  r1.places = ['us/central-bank', 'us/bonds'];
+  r1.primary = 'us/central-bank';
+  const p = synthesizeNextWeek(w).proposedChannels?.[0];
+  expect(p && [p.fromPath, p.toPath]).not.toEqual(['us/central-bank', 'us/bonds']);
+});
+
+test('synthetic proposal is skipped when rank 1 has no usable pair', () => {
+  const w = structuredClone(latest);
+  const r1 = w.events.find((e) => e.rank === 1)!;
+  r1.places = ['in/tech/synthetic-co'];
+  r1.primary = 'in/tech/synthetic-co';
+  expect(synthesizeNextWeek(w).proposedChannels ?? []).toEqual([]);
+});

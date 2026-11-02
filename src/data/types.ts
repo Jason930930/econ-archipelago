@@ -47,12 +47,29 @@ export interface WeekEvent {
   storylines: string[];
   metrics: Metric[];
   sources: Source[];
+  /** 本則事件點亮的精選管道 id（單一事件內的傳導）。 */
+  channels?: string[];
 }
 
 export interface CausalLink {
   from: string;
   to: string;
   label: string;
+  /** 這條因果所走的精選管道 id。 */
+  channel?: string;
+}
+
+/** 排程提議、尚未收錄的管道。 */
+export interface ProposedChannel {
+  id: string;
+  fromPath: string;
+  toPath: string;
+  fromVar: string;
+  toVar: string;
+  sign: 1 | -1;
+  mechanism: string;
+  /** 本週的事件 id。 */
+  evidence: string[];
 }
 
 export interface StorylineDef {
@@ -79,4 +96,5 @@ export interface WeekData {
   watchlist: WatchItem[];
   /** 本週第一次出現的第 3 層實體。 */
   newEntities?: NewEntity[];
+  proposedChannels?: ProposedChannel[];
 }
