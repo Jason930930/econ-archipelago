@@ -90,13 +90,6 @@ export function sentimentScore(events: WeekEvent[]): number {
   return weights === 0 ? 0 : sum / weights;
 }
 
-export function sentimentToWeather(score: number): Weather {
-  if (score >= 0.5) return 'sunny';
-  if (score >= -0.5) return 'cloudy';
-  if (score >= -1.5) return 'overcast';
-  return 'storm';
-}
-
 export function computeWorldParams(ind: ResolvedIndicators, events: WeekEvent[]): WorldParams {
   const gauges: Record<string, GaugeReading> = {};
   for (const b of INDICATOR_BINDINGS) gauges[b.path] = read(b, ind);
@@ -105,7 +98,8 @@ export function computeWorldParams(ind: ResolvedIndicators, events: WeekEvent[])
   return {
     gauges,
     tankers: oil.status === 'missing' ? 5 : Math.round(2 + 6 * oil.level),
-    weather: sentimentToWeather(score),
+    // 使用者偏好：世界一律晴天，不隨市場情緒下雨或變暗（情緒分數仍保留供其他用途）。
+    weather: 'sunny',
     sentimentScore: score,
   };
 }
