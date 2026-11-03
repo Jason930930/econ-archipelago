@@ -11,7 +11,7 @@
 - 油價越高，中東油田的火焰越大、航道上的油輪越多。
 - 殖利率越高，美債塔越高。
 - 交易所的燈光顯示漲跌，預設紅漲綠跌，可切換。
-- 整週的市場情緒決定全世界的天氣：晴天、多雲、陰天或暴風雨。
+- 世界一律是晴天（天氣不隨市場情緒變化）。
 
 按下 ▶，世界會依事件之間的**因果順序**逐一演出：
 
@@ -35,6 +35,21 @@
 - 收錄提議：在 `src/world/channels.ts` 的 `CHANNELS` 加一條管道，沿用提議的 id，起點與終點節點的路徑和提議的 `fromPath`、`toPath` 相同（需要時先在 `CHANNEL_NODES` 加節點）。舊週檔裡的提議不用改，驗證器會把它視為已收錄。
 
 ![傳導網絡模式](docs/images/network.png)
+
+### 完整狀態鏡像
+
+傳導網絡的 36 個節點，每個都有一張**狀態卡**：目前水準（相對過去 5 年的高／中／低）、近期方向（↑ → ↓）、資料日期與來源。
+
+- **16 個節點每天自動更新**：GitHub Actions 每天台北 06:17 從 FRED（聖路易聯邦準備銀行）抓取油價、美國與歐元區通膨、Fed／ECB／日銀利率、美債殖利率、美元、美股、Nasdaq、歐洲天然氣、日圓、鐵礦砂、比特幣、VIX、新台幣，有變動才提交並重新部署。世界在兩次週報之間也會變化。
+- **金價與台股**沿用週報的指標。
+- **其餘 18 個節點**（地緣、航運、AI 資本支出、關稅、外資、台積電、台海……）由每週排程依週報填寫定性判斷；週報沒提到時沿用最近一次，並標示「沿用 N 週前」，8 週沒更新就淡化。
+- 水準以 5 年百分位計算（≥ 80 高、≤ 20 低）；方向比較 4 週前（月資料比 3 個月前），變化超過過去 5 年同間隔變化標準差的一半才算 ↑／↓。
+- 拉近或開網絡模式時，每個節點有一個狀態徽章（箭頭＝方向、顏色＝水準：低藍、中灰、高橙，刻意不用紅綠以免和漲跌混淆）。點徽章或節點會開出狀態卡（數值、5 年區間條、走勢圖、來源連結）；頂欄「世界狀態」列出全部 36 個；本週故事面板列出「本週狀態轉變」。
+- 看較早的週時，狀態是那個週五的樣子。
+
+> 高／中／低為相對過去 5 年的位置，不代表好壞，也不是預測。部分數據來自 FRED（聖路易聯邦準備銀行），各指數版權屬原提供者。
+
+![世界狀態總覽與狀態徽章](docs/images/state.png)
 
 > 僅為資訊整理，不構成任何買賣或個人化投資建議。
 
@@ -62,6 +77,9 @@
 ## 每週自動更新
 
 ```
+每天 06:17（台北）GitHub Actions「每日更新 FRED 節點狀態」
+  └─ 抓 FRED → data/state/fred.json → 驗證、單元測試 → 有變動才提交 main → 觸發部署
+
 每週六 08:52（台北）排程「每週財金五大事」
   ├─ 搜尋新聞、撰寫週報 → 推播＋寄信
   └─ 依 docs/WEEKLY_DATA_GUIDE.md 轉成 data/weeks/<週五>.json
@@ -77,15 +95,17 @@
 ```
 data/weeks/*.json            每週資料 v2（唯一的資料來源）
 data/world/entities.json     種子實體（公司、組織、商品、航道）
+data/state/fred.json         FRED 快照（每週五樣本＋最新值，每日自動更新）
 schema/week.schema.json      JSON Schema v2
-src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度（純邏輯）
+src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度、節點狀態（純邏輯）
 src/data/                    驗證、遷移、指標補值、索引（純邏輯）
 src/story/                   因果排序、播放狀態機（純邏輯）
 src/render/graph.ts          WorldGraph：以路徑索引的節點樹（地區 → 部門 → 實體）
-src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L4 傳導管線、L5 標籤、航線
+src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L4 傳導管線、狀態徽章、L5 標籤、航線
 src/render/landmarks/        18 種部門原型建築
 src/render/gauges/           8 種指標儀表（火焰、光柱、樓層、燈帶、光暈、閃爍、旗幟、熱霧）
-src/ui/                      節點面板（麵包屑）、管道面板、事件卡、時間軸、控制列、文字模式、路由
+src/ui/                      節點面板（麵包屑）、狀態卡與世界狀態、管道面板、事件卡、時間軸、控制列、文字模式、路由
+scripts/fetch-fred.ts        每日 FRED 抓取（單一序列失敗沿用舊值，全部失敗不寫檔）
 ```
 
 所有地點都用路徑表示，傳導網絡的節點也直接用這套路徑；後續的狀態鏡像與情境推演會沿用同一張網。`render/` 只接收算好的儀表讀數（`{ level, trend, status }`），資料、世界版面與播放邏輯都能在 Node 中做單元測試。
@@ -97,7 +117,8 @@ src/ui/                      節點面板（麵包屑）、管道面板、事件
 ```bash
 npm ci
 npm run dev        # 開發伺服器（會先產生索引）
-npm run validate   # 驗證 data/weeks/*.json
+npm run validate   # 驗證 data/weeks/*.json 與 data/state/fred.json
+npx tsx scripts/fetch-fred.ts   # 手動更新 FRED 快照（需要網路）
 npm test           # 單元測試
 npm run e2e        # 建置後跑瀏覽器煙霧測試
 npm run build      # 驗證 → 產生索引 → 建置到 dist/
@@ -109,3 +130,4 @@ npm run build      # 驗證 → 產生索引 → 建置到 dist/
 - 實作計畫：`docs/superpowers/plans/2026-11-02-econ-archipelago.md`
 - 世界骨架 v2：`docs/superpowers/specs/2026-11-02-world-skeleton-v2-design.md`
 - 常駐傳導網絡：`docs/superpowers/specs/2026-11-02-transmission-network-design.md`、`docs/superpowers/plans/2026-11-02-transmission-network.md`
+- 完整狀態鏡像：`docs/superpowers/specs/2026-11-02-state-mirror-design.md`、`docs/superpowers/plans/2026-11-02-state-mirror.md`

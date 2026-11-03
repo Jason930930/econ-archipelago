@@ -3,6 +3,7 @@ import schema from '../../schema/week.schema.json';
 import { checkNewEntities, mergeRegistry, resolvePath, type EntityRecord } from '../world/registry';
 import { CHANNELS, getChannel, getChannelNode, isChannelId, touches } from '../world/channels';
 import { PATH_SEGMENT } from '../world/paths';
+import { NODE_SOURCES } from '../world/stateSources';
 import type { WeekData, WeekEvent } from './types';
 import { isGoogleRedirect } from './urls';
 
@@ -162,6 +163,25 @@ export function validateWeek(raw: unknown, fileName: string, ctx: ValidateContex
     if (prev && (prev.fromPath !== pc.fromPath || prev.toPath !== pc.toPath || prev.sign !== pc.sign)) {
       out.push(err(p, `提議「${pc.id}」與較早週不一致（較早為 ${prev.fromPath} → ${prev.toPath}，方向 ${prev.sign}）`));
     }
+  });
+
+  const stateNodes = new Set<string>();
+  (w.nodeStates ?? []).forEach((ns, i) => {
+    const p = `/nodeStates/${i}`;
+    const src = NODE_SOURCES[ns.node];
+    if (!src) out.push(err(`${p}/node`, `找不到節點「${ns.node}」`));
+    else if (src.kind === 'fred') out.push(err(`${p}/node`, `${ns.node} 由 FRED ${src.series} 每日自動更新，不要在週檔填寫`));
+    else if (src.kind === 'report-numeric') out.push(err(`${p}/node`, `${ns.node} 由週檔 indicators.${src.indicator} 決定，不要在 nodeStates 填寫`));
+    if (stateNodes.has(ns.node)) out.push(err(`${p}/node`, `節點「${ns.node}」在本週重複`));
+    stateNodes.add(ns.node);
+    if (ns.basis.trim() === '') out.push(err(`${p}/basis`, 'basis 不可為空'));
+    if (!src) return;
+    const nodePath = getChannelNode(ns.node).path;
+    ns.evidence.forEach((eid, j) => {
+      const ev = byId.get(eid);
+      if (!ev) out.push(err(`${p}/evidence/${j}`, `找不到事件「${eid}」`));
+      else if (!touchesAny(ev, nodePath)) out.push(err(`${p}/evidence/${j}`, `事件 ${eid} 的 place 沒有碰到節點路徑「${nodePath}」`));
+    });
   });
 
   return out;

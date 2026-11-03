@@ -84,7 +84,7 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement, ext
   overlay.appendChild(labels.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = WEATHER_TARGETS.cloudy.sky.clone();
+  scene.background = WEATHER_TARGETS.sunny.sky.clone();
   scene.fog = new THREE.Fog(scene.background.getHex(), 180, 420);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
@@ -158,8 +158,8 @@ export function createStage(canvas: HTMLCanvasElement, overlay: HTMLElement, ext
   scene.add(rain);
 
 
-  let weather = { sun: 0.75, cloud: 0.7, fog: 0.15, rain: 0 };
-  let weatherTarget = WEATHER_TARGETS.cloudy;
+  let weather = { sun: 1, cloud: 0.15, fog: 0, rain: 0 };
+  let weatherTarget = WEATHER_TARGETS.sunny;
   let lowPower = false;
   let timeScale = 1;
   let insets = { right: 0, bottom: 0 };

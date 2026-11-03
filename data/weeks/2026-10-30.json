@@ -460,5 +460,16 @@
       ],
       "confirmed": true
     }
+  ],
+  "nodeStates": [
+    {
+      "node": "seas.hormuz-risk",
+      "level": "high",
+      "direction": 1,
+      "basis": "一艘油輪在荷莫茲海峽被附著爆裂物攻擊",
+      "evidence": [
+        "e3"
+      ]
+    }
   ]
 }

@@ -75,7 +75,8 @@ test('leaving text mode clears the previous week\'s effects', async ({ page }) =
   await page.goto('./?fast=1#/2026-10-30');
   await page.locator('[data-action=play]').click();
   await expect(page.locator('.panel .finale')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.fx-flag').first()).toBeAttached();
+  // 終幕面板先出現，旗子在鏡頭歸位後才插上；負載下鏡頭歸位可能要數秒（main 實測 2.6–5.2 秒）。
+  await expect(page.locator('.fx-flag').first()).toBeAttached({ timeout: 30_000 });
   await page.locator('[data-action=text-mode]').click();
   await page.locator('.week-tick[data-week="2026-10-23"]').click();
   await page.locator('[data-action=text-mode]').click();

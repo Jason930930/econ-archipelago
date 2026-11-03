@@ -1,4 +1,6 @@
 import { computeActivation, type ChannelIndex } from '../world/activation';
+import { computeState, type StateIndex } from '../world/state';
+import type { FredFile } from './fredFile';
 import { resolveIndicators, type ResolvedIndicators } from './indicators';
 import { CHANNEL_NODES } from '../world/channels';
 import { districtsFor } from '../world/districts';
@@ -20,13 +22,15 @@ export interface ArchiveIndex {
   districts: Record<RegionId, SectorId[]>;
   /** 傳導管道的逐週活躍度、歷史與排程提議。 */
   channels: ChannelIndex;
+  /** 節點狀態（子專案 3）。 */
+  state: StateIndex;
 }
 
 export function sortWeeks(weeks: WeekData[]): WeekData[] {
   return [...weeks].sort((a, b) => a.weekId.localeCompare(b.weekId));
 }
 
-export function buildIndex(weeks: WeekData[], seed: EntityRecord[]): ArchiveIndex {
+export function buildIndex(weeks: WeekData[], seed: EntityRecord[], fred: FredFile | null = null): ArchiveIndex {
   const asc = sortWeeks(weeks);
   const resolved = resolveIndicators(asc);
   const lines = new Map<string, ArchiveIndex['storylines'][number]>();
@@ -65,5 +69,6 @@ export function buildIndex(weeks: WeekData[], seed: EntityRecord[]): ArchiveInde
     storylines: [...lines.values()],
     indicators: Object.fromEntries(asc.map((w, i) => [w.weekId, resolved[i]!])),
     channels: computeActivation(asc),
+    state: computeState(asc, fred),
   };
 }

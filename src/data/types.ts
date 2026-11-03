@@ -97,4 +97,16 @@ export interface WeekData {
   /** 本週第一次出現的第 3 層實體。 */
   newEntities?: NewEntity[];
   proposedChannels?: ProposedChannel[];
+  /** 週報定性節點的狀態（子專案 3）。 */
+  nodeStates?: NodeStateEntry[];
+}
+
+/** 排程依週報填寫的節點狀態；只用於來源為「週報定性」的節點。 */
+export interface NodeStateEntry {
+  node: string;
+  level: 'high' | 'mid' | 'low';
+  direction: 1 | 0 | -1;
+  basis: string;
+  /** 本週的事件 id。 */
+  evidence: string[];
 }

@@ -73,6 +73,22 @@ describe('validateWeek', () => {
   test('proposal same from/to', () => expectError((w) => { w.proposedChannels[0].toPath = 'jp/tech'; }, '/proposedChannels/0/toPath'));
   test('proposal empty mechanism', () => expectError((w) => { w.proposedChannels[0].mechanism = ' '; }, '/proposedChannels/0/mechanism'));
   test('proposal repeated id within a week', () => expectError((w) => { w.proposedChannels.push({ ...w.proposedChannels[0] }); }, '/proposedChannels/1/id'));
+  test('unknown node in nodeStates', () => expectError((w) => { w.nodeStates[0].node = 'nope'; }, '/nodeStates/0/node'));
+  test('fred node in nodeStates is rejected with its source', () => {
+    const w = base(); w.nodeStates[0].node = 'us.long-yield'; w.events[0].places.push('us/bonds');
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/nodeStates/0/node' && e.message.includes('DGS10')), JSON.stringify(errs)).toBe(true);
+  });
+  test('report indicator node in nodeStates is rejected', () => {
+    const w = base(); w.nodeStates[0].node = 'intl.gold';
+    const errs = validateWeek(w, FILE, ctx);
+    expect(errs.some((e) => e.path === '/nodeStates/0/node' && e.message.includes('gold')), JSON.stringify(errs)).toBe(true);
+  });
+  test('duplicate node in nodeStates', () => expectError((w) => { w.nodeStates.push({ ...w.nodeStates[0] }); }, '/nodeStates/1/node'));
+  test('empty basis in nodeStates', () => expectError((w) => { w.nodeStates[0].basis = '  '; }, '/nodeStates/0/basis'));
+  test('nodeStates evidence must exist', () => expectError((w) => { w.nodeStates[0].evidence = ['e9']; }, '/nodeStates/0/evidence/0'));
+  test('nodeStates evidence must touch the node', () => expectError((w) => { w.nodeStates[0].evidence = ['e2']; }, '/nodeStates/0/evidence/0'));
+  test('nodeStates level is an enum', () => expectError((w) => { w.nodeStates[0].level = 'huge'; }, '/nodeStates/0/level'));
   test('region-only primary is fine', () => {
     const w = base(); w.events[0].primary = 'us'; w.events[0].places.push('us');
     expect(validateWeek(w, FILE, ctx)).toEqual([]);

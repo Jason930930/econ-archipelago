@@ -53,3 +53,20 @@ test('synthetic proposal is skipped when rank 1 has no usable pair', () => {
   r1.primary = 'in/tech/synthetic-co';
   expect(synthesizeNextWeek(w).proposedChannels ?? []).toEqual([]);
 });
+
+test('synthetic week adds a rehearsal node state the rank 1 event touches', () => {
+  const next = synthesizeNextWeek(latest);
+  const r1 = next.events.find((e) => e.rank === 1)!;
+  const st = next.nodeStates?.find((n) => n.basis === '演練用狀態');
+  expect(st).toMatchObject({ level: 'mid', direction: 0, evidence: [r1.id] });
+  const archive = ['2026-10-16', '2026-10-23', '2026-10-30'].map((id) => ({ fileName: `${id}.json`, raw: JSON.parse(readFileSync(`data/weeks/${id}.json`, 'utf8')) as unknown }));
+  expect(validateArchive([...archive, { fileName: '2026-11-06.json', raw: next }], seed)).toEqual([]);
+});
+
+test('no rehearsal node state when rank 1 touches no qualitative node', () => {
+  const w = structuredClone(latest);
+  const r1 = w.events.find((e) => e.rank === 1)!;
+  r1.places = ['ca/energy'];
+  r1.primary = 'ca/energy';
+  expect((synthesizeNextWeek(w).nodeStates ?? []).some((n) => n.basis === '演練用狀態')).toBe(false);
+});

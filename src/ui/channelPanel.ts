@@ -4,6 +4,7 @@ import { isLit, weekIntensity, type ChannelActivity } from '../world/activation'
 import { CHANNELS, FAMILY_INFO, getChannel, getChannelNode, LAG_LABEL, type Channel } from '../world/channels';
 import { labelOf } from '../world/registry';
 import { el } from './dom';
+import { stateChip, statesFor } from './stateCard';
 import { shortDate } from './format';
 
 export const QUALITATIVE_NOTE = '方向與強度為教科書層級的定性判斷，不是量化模型或預測。';
@@ -45,12 +46,15 @@ export function renderChannelPanel(id: string, week: WeekData, index: ArchiveInd
   if (!c) return el('section', { class: 'channel-panel' }, el('p', { class: 'muted' }, `找不到管道「${id}」`));
   const from = getChannelNode(c.from), to = getChannelNode(c.to);
   const act = index.channels.byWeek[week.weekId]?.[id];
+  const nodeStates = statesFor(week.weekId, index);
   const panel = el('section', { class: 'channel-panel', 'data-channel': id },
     el('div', { class: 'card-meta' }, '傳導管道'),
     el('h3', { class: 'channel-ends' },
       button(from.name, { 'data-path': from.path }, 'select-node', { path: from.path }),
+      stateChip(nodeStates[c.from]),
       el('span', { 'aria-hidden': 'true' }, ' → '),
-      button(to.name, { 'data-path': to.path }, 'select-node', { path: to.path })),
+      button(to.name, { 'data-path': to.path }, 'select-node', { path: to.path }),
+      stateChip(nodeStates[c.to])),
     el('dl', { class: 'channel-facts' },
       el('dt', {}, '方向'), el('dd', {}, `${signText(c.sign)}（${from.name}上升 → ${to.name}${c.sign > 0 ? '上升' : '下降'}）`),
       el('dt', {}, '強度'), el('dd', { 'aria-label': `強度 ${c.strength} / 3` }, strengthText(c.strength)),

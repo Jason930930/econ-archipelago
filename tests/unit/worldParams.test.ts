@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import type { ResolvedIndicator, ResolvedIndicators } from '../../src/data/indicators';
 import { INDICATOR_KEYS, type IndicatorKey } from '../../src/data/types';
-import { bindingFor, computeWorldParams, INDICATOR_BINDINGS, lerpWorldParams, sentimentScore, sentimentToWeather, stackFloors } from '../../src/world/indicators';
+import { bindingFor, computeWorldParams, INDICATOR_BINDINGS, lerpWorldParams, sentimentScore, stackFloors } from '../../src/world/indicators';
 import { resolvePath, type EntityRecord } from '../../src/world/registry';
 import { makeEvent } from './helpers';
 
@@ -61,9 +61,9 @@ describe('computeWorldParams', () => {
 describe('sentiment and weather', () => {
   const events = [-2, -1, -2, -2, -1].map((s, i) => makeEvent({ id: `e${i + 1}`, rank: i + 1, sentiment: s }));
   test('rank weighted', () => expect(sentimentScore(events)).toBeCloseTo(-25 / 15));
-  test('storm', () => expect(computeWorldParams(ind(), events).weather).toBe('storm'));
-  test.each([[0.5, 'sunny'], [0.49, 'cloudy'], [-0.5, 'cloudy'], [-0.51, 'overcast'], [-1.5, 'overcast'], [-1.51, 'storm']])('score %f → %s', (s, w) => {
-    expect(sentimentToWeather(s)).toBe(w);
+  test('always sunny, even in a very negative week', () => {
+    expect(computeWorldParams(ind(), events).weather).toBe('sunny');
+    expect(computeWorldParams(ind(), [makeEvent({ sentiment: 3 })]).weather).toBe('sunny');
   });
 });
 
@@ -78,6 +78,6 @@ describe('lerpWorldParams', () => {
     const m = lerpWorldParams(a, b, 0.5);
     expect(m.gauges['gulf/energy']!.level).toBeCloseTo(0.5);
     expect(Number.isInteger(m.tankers)).toBe(true);
-    expect(m.weather).toBe('storm');
+    expect(m.weather).toBe('sunny');
   });
 });
