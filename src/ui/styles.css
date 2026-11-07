@@ -233,6 +233,10 @@ a { color: var(--accent); }
 .controls .step-label { font-size: 13px; color: var(--muted); margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
 .timeline { overflow-x: auto; overscroll-behavior-x: contain; }
 .timeline-inner { display: grid; grid-template-columns: 116px repeat(var(--weeks), minmax(64px, 1fr)); gap: 4px 6px; align-items: center; min-width: max-content; }
+.timeline-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+.timeline-page { font: inherit; font-size: 12px; color: var(--accent); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 1px 8px; cursor: pointer; }
+.timeline-page:disabled { color: var(--muted); opacity: 0.5; cursor: default; }
+.month-label { font-size: 11px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 1px; }
 .timeline .row-label { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: transparent; border: 0; text-align: left; padding: 0; cursor: pointer; }
 .timeline .row-label[aria-pressed="true"] { color: var(--accent); font-weight: 600; }
 .week-tick { border: 1px solid var(--border); background: transparent; border-radius: 8px; padding: 3px 6px; cursor: pointer; font-size: 13px; }

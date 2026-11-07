@@ -94,6 +94,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   let webglOk = webgl;
   /** 進行中的情境推演（子專案 4）。 */
   let scenario: Shock | null = null;
+  /** 時間軸視窗起點；null = 跟著目前這週（切週時重設）。 */
+  let timelineStart: number | null = null;
   let scenarioResult: ScenarioResult | null = null;
 
   // ---------- 版面 ----------
@@ -249,9 +251,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
   function syncTimeline() {
     timelineSlot.replaceChildren(renderTimeline({
       index, weekId: week.weekId, storyline,
+      windowStart: timelineStart,
+      windowSize: isNarrow() ? 6 : 12,
       onWeek: (id) => void goWeek(id, null),
       onEvent: (wid, eid) => void goWeek(wid, eid),
       onStoryline: (id) => toggleStoryline(id),
+      onWindow: (start) => {
+        timelineStart = start;
+        syncTimeline();
+        syncInsets();
+      },
     }));
   }
 
@@ -525,6 +534,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     runToken++;
     week = next;
     if (changed) {
+      timelineStart = null;
       steps = buildSteps(week);
       player = initialPlayer(steps, player.speed);
       storyline = null;
