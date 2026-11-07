@@ -11,6 +11,8 @@ import { renderActiveChannels, renderChannelPanel, renderProposalList, renderPro
 import { renderEventCard } from './eventCard';
 import { renderTransitions, renderWorldState, statesFor } from './stateCard';
 import { stateTransitions } from '../world/state';
+import { runScenario, type ScenarioResult, type Shock } from '../world/scenario';
+import { renderScenarioPicker, renderScenarioResult, renderScenarioText } from './scenarioPanel';
 import { FAMILY_INFO, getChannel, getChannelNode } from '../world/channels';
 import { hoverInfo } from './hover';
 import { renderNodePanel } from './nodePanel';
@@ -85,6 +87,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
   let navSeq = 0;
   let world: WorldView | null = null;
   let webglOk = webgl;
+  /** 進行中的情境推演（子專案 4）。 */
+  let scenario: Shock | null = null;
+  let scenarioResult: ScenarioResult | null = null;
 
   // ---------- 版面 ----------
   const weekTitle = el('p', { class: 'week-title' });
@@ -92,13 +97,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const colorBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'color-mode' });
   const networkBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'network', title: '顯示所有常駐傳導管道' }, '傳導網絡');
   const stateBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'state', title: '36 個節點的目前狀態' }, '世界狀態');
+  const whatIfBtn = el('button', { type: 'button', class: 'btn', 'data-action': 'what-if', title: '給一個節點衝擊，推演它沿傳導管道擴散到哪裡' }, '情境推演');
   if (!webgl) {
     textBtn.disabled = true;
     textBtn.title = '此瀏覽器不支援 WebGL，只能使用文字模式';
   }
   const topbar = el('header', { class: 'topbar' },
     el('div', { class: 'brand' }, el('h1', {}, '經濟群島'), weekTitle, el('p', { class: 'disclaimer' }, DISCLAIMER)),
-    el('div', { class: 'tools' }, stateBtn, networkBtn, textBtn, colorBtn),
+    el('div', { class: 'tools' }, whatIfBtn, stateBtn, networkBtn, textBtn, colorBtn),
   );
   const stage = el('div', { class: 'stage' });
   const canvas = el('canvas', { 'aria-label': '經濟群島 3D 世界' });
@@ -162,7 +168,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
     panel.dataset.size = panel.dataset.size === 'full' ? '' : 'full';
   });
   panel.addEventListener('select-node', (e) => {
-    selectNode((e as CustomEvent<{ path: string }>).detail.path);
+    const path = (e as CustomEvent<{ path: string }>).detail.path;
+    // 推演結果裡點一列：只飛過去，保留結果面板與推演。
+    if (scenario && (e.target as HTMLElement).closest('.scenario-result')) {
+      world?.highlight([path]);
+      void world?.flyTo(path, 900);
+      return;
+    }
+    selectNode(path);
   });
   panel.addEventListener('select-event', (e) => {
     void selectEvent((e as CustomEvent<{ eventId: string }>).detail.eventId);
@@ -244,6 +257,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     colorBtn.textContent = colorMode === 'tw' ? '紅漲綠跌' : '綠漲紅跌';
     networkBtn.setAttribute('aria-pressed', String(networkMode));
     networkBtn.hidden = textMode;
+    whatIfBtn.setAttribute('aria-pressed', String(scenario !== null));
     stateBtn.hidden = textMode;
     channelLegend.hidden = textMode || !networkMode;
     colorBtn.title = '切換漲跌配色';
@@ -255,12 +269,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function setHash(eventId: string | null) {
-    const h = toHash({ weekId: week.weekId, eventId });
+    const h = toHash({ weekId: week.weekId, eventId, scenario: eventId ? null : scenario });
     if (location.hash !== h) history.replaceState(null, '', h);
   }
 
   function renderText(focusEvent: string | null) {
-    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week), index.entities, statesFor(week.weekId, index)) : '');
+    textRoot.replaceChildren(textMode ? renderTextMode(week, orderEvents(week), index.entities, statesFor(week.weekId, index), scenarioResult ? renderScenarioText(scenarioResult, index) : null) : '');
     if (textMode && focusEvent) textRoot.querySelector(`[data-event-id="${CSS.escape(focusEvent)}"]`)?.scrollIntoView({ block: 'start' });
   }
 
@@ -373,7 +387,46 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (player.steps[player.index]) void runStep(token, player.playing);
   }
 
+  // ---------- 情境推演 ----------
+  /** 以目前這週的狀態推演；3D 世界播放三波，面板顯示結果（文字模式則寫進文字頁面）。 */
+  function startScenario(shock: Shock) {
+    pause();
+    scenario = shock;
+    scenarioResult = runScenario(shock, statesFor(week.weekId, index));
+    setHash(null);
+    syncChrome();
+    if (textMode) {
+      renderText(null);
+      window.scrollTo(0, 0);
+      return;
+    }
+    const w = ensureWorld();
+    showPanel(renderScenarioResult(scenarioResult, index));
+    if (w) {
+      w.effects.clear();
+      w.highlight([]);
+      void (isNarrow() ? w.focusAsiaPacific(800) : w.resetCamera(800));
+      void w.showScenario(scenarioResult);
+    }
+  }
+
+  /** 結束推演；restore = 回到本週故事面板（播放或點事件時由它們自己決定面板）。 */
+  function endScenario(restore = true) {
+    if (!scenario) return;
+    scenario = null;
+    scenarioResult = null;
+    void world?.showScenario(null);
+    syncChrome();
+    setHash(null);
+    if (textMode) renderText(null);
+    else if (restore) {
+      if (!isNarrow()) showPanel(introPanel());
+      else panel.hidden = true;
+    }
+  }
+
   function play() {
+    endScenario(false);
     if (steps.length === 0) return;
     const restart = player.index < 0 || player.index >= steps.length - 1;
     dispatch({ type: 'play' });
@@ -388,6 +441,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   function step(a: PlayerAction) {
+    endScenario(false);
     if (steps.length === 0) return;
     const wasPlaying = player.playing;
     dispatch(a);
@@ -398,6 +452,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   async function selectEvent(eventId: string) {
     if (!eventById(eventId)) return;
+    endScenario(false);
     if (textMode) {
       setHash(eventId);
       renderText(eventId);
@@ -445,7 +500,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   // ---------- 切週 ----------
-  async function goWeek(weekId: string, eventId: string | null, invalid = false) {
+  async function goWeek(weekId: string, eventId: string | null, invalid = false, withScenario?: Shock | null) {
+    // 切週時保留情境（依新週狀態重算）；前往某則事件或網址指定時則依參數。
+    const keep = withScenario !== undefined ? withScenario : eventId ? null : scenario;
     const nav = ++navSeq;
     runToken++;
     if (player.playing) dispatch({ type: 'pause' });
@@ -485,6 +542,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
       if (!eventId) void (first && isNarrow() ? w.focusAsiaPacific(0) : w.resetCamera(first ? 0 : 1100));
     }
 
+    if (!keep && scenario) endScenario(false);
+    if (keep) {
+      startScenario(keep);
+      return;
+    }
     if (textMode) {
       renderText(eventId);
       setHash(eventId);
@@ -522,8 +584,27 @@ export async function startApp(root: HTMLElement): Promise<void> {
       player = initialPlayer(steps, player.speed);
       syncControls();
       setHash(null);
-      if (!isNarrow()) showPanel(introPanel());
+      if (scenario) startScenario(scenario);
+      else if (!isNarrow()) showPanel(introPanel());
     }
+  });
+
+  whatIfBtn.addEventListener('click', () => {
+    const picker = renderScenarioPicker(statesFor(week.weekId, index), index);
+    if (textMode) {
+      textRoot.prepend(picker);
+      window.scrollTo(0, 0);
+      return;
+    }
+    pause();
+    showPanel(picker);
+  });
+  root.addEventListener('start-scenario', (e) => startScenario((e as CustomEvent<Shock>).detail));
+  root.addEventListener('end-scenario', () => endScenario());
+  root.addEventListener('replay-scenario', () => {
+    if (!scenarioResult || !world) return;
+    world.effects.clear();
+    void world.showScenario(scenarioResult);
   });
 
   stateBtn.addEventListener('click', () => {
@@ -552,7 +633,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const w = await loadWeek(pre.weekId).catch(() => null);
     if (!w) return false;
     const r = parseHash(location.hash, weekIds, (id) => (id === w.weekId ? w.events.map((e) => e.id) : []));
-    await goWeek(r.weekId, r.eventId, r.invalid);
+    await goWeek(r.weekId, r.eventId, r.invalid, r.scenario);
     return true;
   }
 
@@ -560,10 +641,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // E2E 測試鉤子：只在 ?test=1 時暴露。
   if (new URLSearchParams(location.search).has('test')) {
-    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), pickChannel: (id: string) => selectChannel(id), nodeState: (id: string) => statesFor(week.weekId, index)[id] ?? null, cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
+    Object.assign(window, { __econ: { ready: false, pick: (path: string) => selectNode(path), pickChannel: (id: string) => selectChannel(id), nodeState: (id: string) => statesFor(week.weekId, index)[id] ?? null, scenario: () => scenarioResult, cameraTarget: () => world?.cameraTarget() ?? null, world: () => world } });
   }
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && scenario) {
+      endScenario();
+      return;
+    }
     const t = e.target as HTMLElement;
     if (textMode || t.closest('button, input, textarea, select, a')) return;
     if (e.key === ' ') {
