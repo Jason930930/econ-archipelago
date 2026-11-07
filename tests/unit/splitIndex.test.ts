@@ -53,3 +53,11 @@ describe('splitIndex / hydrateWeek', () => {
     expect(JSON.stringify(catalog).length).toBeLessThan(before.length * 0.75);
   });
 });
+
+test('hydrating a catalog from before the split (no transitions) does not throw', () => {
+  const { catalog, derived } = splitIndex(full());
+  const old = catalog as unknown as { state: Record<string, unknown> };
+  delete old.state.transitions;
+  expect(() => hydrateWeek(catalog, derived[0]!)).not.toThrow();
+  expect(catalog.state.transitions['2026-10-16']).toEqual([]);
+});

@@ -29,6 +29,10 @@ export function splitIndex(full: ArchiveIndex): { catalog: ArchiveIndex; derived
 }
 
 export function hydrateWeek(catalog: ArchiveIndex, d: WeekDerived): void {
+  // 部署切換的幾分鐘內，瀏覽器可能拿到舊版（沒有分拆欄位）的 index.json：缺的欄位先補成空物件。
+  catalog.state.byWeek ??= {};
+  catalog.state.transitions ??= {};
+  catalog.channels.byWeek ??= {};
   catalog.state.byWeek[d.weekId] = d.state;
   catalog.channels.byWeek[d.weekId] = d.channels;
   catalog.state.transitions[d.weekId] = d.transitions;

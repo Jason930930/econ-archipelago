@@ -79,3 +79,32 @@ describe('renderTimeline', () => {
     expect(renderTimeline(props()).querySelector('.timeline-range')!.textContent).toBe('第 9–20 週，共 20 週');
   });
 });
+
+describe('review fixes', () => {
+  test('clicking a week already in view keeps the window; a week outside moves it', async () => {
+    const { nextWindowStart } = await import('../../src/ui/timeline');
+    // 預設視窗 {8,20}（跟隨 ids[19]）；點第 5 欄 ids[12] → 保持 8
+    expect(nextWindowStart(ids, ids[19]!, ids[12]!, null, 12)).toBe(8);
+    // 翻頁到 start 2 後點 ids[5] → 保持 2
+    expect(nextWindowStart(ids, ids[19]!, ids[5]!, 2, 12)).toBe(2);
+    // 從分享網址跳到視窗外 ids[0] → 跟隨（null）
+    expect(nextWindowStart(ids, ids[19]!, ids[0]!, 8, 12)).toBeNull();
+  });
+  test('paging controls sit outside the horizontal scroll area', () => {
+    const t = renderTimeline(props());
+    expect(t.querySelector(':scope > .timeline-nav')).not.toBeNull();
+    expect(t.querySelector(':scope > .timeline-scroll > .timeline-inner')).not.toBeNull();
+    expect(t.querySelector('.timeline-scroll .timeline-nav')).toBeNull();
+  });
+  test('focus returns to the paging button after re-render, or the other one when disabled', async () => {
+    const { restorePagingFocus } = await import('../../src/ui/timeline');
+    const mid = renderTimeline(props({ windowStart: 4 }));
+    document.body.replaceChildren(mid);
+    restorePagingFocus(mid, 'timeline-older');
+    expect((document.activeElement as HTMLElement).dataset.action).toBe('timeline-older');
+    const first = renderTimeline(props({ windowStart: 0 }));
+    document.body.replaceChildren(first);
+    restorePagingFocus(first, 'timeline-older');
+    expect((document.activeElement as HTMLElement).dataset.action).toBe('timeline-newer');
+  });
+});

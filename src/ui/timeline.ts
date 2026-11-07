@@ -31,6 +31,20 @@ export function timelineWindow(weekIds: string[], current: string, start: number
   return { start: s, end: Math.min(n, s + size) };
 }
 
+/** 切週後的視窗起點：新的週已在目前視窗內就不動（點擊時欄位不會跳），否則改為跟隨新的週（null）。 */
+export function nextWindowStart(weekIds: string[], prevWeek: string, nextWeek: string, start: number | null, size: number): number | null {
+  const cur = timelineWindow(weekIds, prevWeek, start, size);
+  const i = weekIds.indexOf(nextWeek);
+  return i >= cur.start && i < cur.end ? cur.start : null;
+}
+
+/** 翻頁後重新渲染會移除按鈕；把焦點放回同一個翻頁按鈕，它被停用時改放另一個。 */
+export function restorePagingFocus(root: HTMLElement, action: string): void {
+  const same = root.querySelector<HTMLButtonElement>(`[data-action="${action}"]`);
+  const other = root.querySelector<HTMLButtonElement>(`[data-action="${action === 'timeline-older' ? 'timeline-newer' : 'timeline-older'}"]`);
+  (same && !same.disabled ? same : other && !other.disabled ? other : same)?.focus();
+}
+
 const monthOf = (weekId: string) => `${weekId.slice(0, 4)}/${weekId.slice(5, 7)}`;
 
 export function renderTimeline(p: TimelineProps): HTMLElement {
@@ -92,5 +106,6 @@ export function renderTimeline(p: TimelineProps): HTMLElement {
       grid.append(cell);
     }
   }
-  return el('div', { class: 'timeline' }, nav, grid);
+  // 翻頁列放在可橫向捲動的區域外面，手機上捲動週次時它仍留在畫面上。
+  return el('div', { class: 'timeline' }, nav, el('div', { class: 'timeline-scroll' }, grid));
 }

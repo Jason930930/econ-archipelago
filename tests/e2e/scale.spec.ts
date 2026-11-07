@@ -30,3 +30,24 @@ test('derived failure shows the load error', async ({ page }) => {
   await expect(page.locator('.toast')).toContainText('這一週的資料載入失敗');
   await expect(page.locator('.week-title')).toContainText('2026/10/30');
 });
+
+test('latest week still lists state transitions', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('.panel .intro .state-transitions button').first()).toBeVisible();
+});
+
+test('on a phone the current week and the paging controls are on screen', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+  await page.goto('./#/2026-11-06');
+  const tick = page.locator('.week-tick[aria-current="true"]');
+  await expect(tick).toBeVisible();
+  await expect.poll(async () => {
+    const b = await tick.boundingBox();
+    return b ? b.x >= 0 && b.x + b.width <= 375 : false;
+  }).toBe(true);
+  for (const action of ['timeline-older', 'timeline-newer']) {
+    const b = await page.locator(`[data-action="${action}"]`).boundingBox();
+    expect(b && b.x >= 0 && b.x + b.width <= 375).toBe(true);
+  }
+  await page.close();
+});

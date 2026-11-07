@@ -18,7 +18,7 @@ import { hoverInfo } from './hover';
 import { renderNodePanel } from './nodePanel';
 import { parseHash, toHash } from './route';
 import { renderTextMode, renderWatchlist } from './textMode';
-import { renderTimeline } from './timeline';
+import { nextWindowStart, renderTimeline, restorePagingFocus } from './timeline';
 
 const DISCLAIMER = '僅為資訊整理，不構成任何買賣或個人化投資建議。';
 const COLOR_KEY = 'econ-archipelago:colorMode';
@@ -257,11 +257,20 @@ export async function startApp(root: HTMLElement): Promise<void> {
       onEvent: (wid, eid) => void goWeek(wid, eid),
       onStoryline: (id) => toggleStoryline(id),
       onWindow: (start) => {
+        const action = start < (timelineStart ?? Infinity) ? 'timeline-older' : 'timeline-newer';
         timelineStart = start;
         syncTimeline();
         syncInsets();
+        restorePagingFocus(timelineSlot, action);
       },
     }));
+    // 手機上視窗比畫面寬：把目前這週捲進畫面。
+    const scroller = timelineSlot.querySelector<HTMLElement>('.timeline-scroll');
+    const tick = timelineSlot.querySelector<HTMLElement>('.week-tick[aria-current="true"]');
+    if (scroller && tick) {
+      const s = scroller.getBoundingClientRect(), t = tick.getBoundingClientRect();
+      if (t.right > s.right || t.left < s.left) scroller.scrollLeft += t.left - s.left - (s.width - t.width) / 2;
+    }
   }
 
   function syncChrome() {
@@ -530,11 +539,13 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // 載入完成後才決定是否保留情境：載入期間使用者可能已經結束或換了情境。
     const keep = withScenario !== undefined ? withScenario : eventId ? null : scenario;
     const first = !week;
+    const prevWeekId = first ? null : week.weekId;
     const changed = first || next.weekId !== week.weekId;
     runToken++;
     week = next;
     if (changed) {
-      timelineStart = null;
+      if (first) timelineStart = null;
+      else timelineStart = nextWindowStart(weekIds, prevWeekId!, next.weekId, timelineStart, isNarrow() ? 6 : 12);
       steps = buildSteps(week);
       player = initialPlayer(steps, player.speed);
       storyline = null;
