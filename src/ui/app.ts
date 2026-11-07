@@ -1,4 +1,5 @@
 import type { ArchiveIndex } from '../data/buildIndex';
+import { hydrateWeek, type WeekDerived } from '../data/splitIndex';
 import type { WeekData, WeekEvent } from '../data/types';
 import { createWorld, supportsWebGL, type ColorMode, type WorldView } from '../render/world';
 import { buildSteps, orderEvents, outgoingLinks, type Step } from '../story/order';
@@ -10,7 +11,6 @@ import { el } from './dom';
 import { renderActiveChannels, renderChannelPanel, renderProposalList, renderProposalPanel } from './channelPanel';
 import { renderEventCard } from './eventCard';
 import { renderTransitions, renderWorldState, statesFor } from './stateCard';
-import { stateTransitions } from '../world/state';
 import { runScenario, type ScenarioResult, type Shock } from '../world/scenario';
 import { renderScenarioPicker, renderScenarioResult, renderScenarioText } from './scenarioPanel';
 import { FAMILY_INFO, getChannel, getChannelNode } from '../world/channels';
@@ -65,10 +65,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   const weekCache = new Map<string, WeekData>();
+  /** 週檔與該週的衍生資料（節點狀態、管道活躍度、狀態轉變）一起載入；兩者都成功才算載入完成。 */
   const loadWeek = async (id: string) => {
     const hit = weekCache.get(id);
     if (hit) return hit;
-    const w = await fetchJson<WeekData>(`${base}data/weeks/${id}.json`);
+    const [w, d] = await Promise.all([
+      fetchJson<WeekData>(`${base}data/weeks/${id}.json`),
+      fetchJson<WeekDerived>(`${base}data/derived/${id}.json`),
+    ]);
+    hydrateWeek(index, d);
     weekCache.set(id, w);
     return w;
   };
@@ -220,7 +225,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   function transitionsPanel(): HTMLElement | null {
     const i = weekIds.indexOf(week.weekId);
     if (i <= 0) return null;
-    return renderTransitions(stateTransitions(index.state.byWeek[weekIds[i - 1]!] ?? {}, statesFor(week.weekId, index)), index);
+    return renderTransitions(index.state.transitions[week.weekId] ?? [], index);
   }
 
   function finalePanel(): HTMLElement {
