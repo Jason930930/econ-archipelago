@@ -1,0 +1,495 @@
+{
+  "schemaVersion": 2,
+  "weekId": "2026-11-06",
+  "period": {
+    "start": "2026-10-31",
+    "end": "2026-11-06"
+  },
+  "title": "財金週報（2026/10/31–2026/11/06）",
+  "indicators": {
+    "brent": {
+      "value": 97.8,
+      "unit": "USD/bbl",
+      "changePct": null,
+      "note": "11/6 約 97.8 美元；各來源報價時點略異"
+    },
+    "wti": {
+      "value": 90.4,
+      "unit": "USD/bbl",
+      "changePct": null,
+      "note": "11/6 約 90.4 美元；各來源報價時點略異"
+    },
+    "fedFunds": {
+      "value": 4,
+      "range": [
+        3.75,
+        4
+      ],
+      "unit": "%",
+      "note": "10/28 維持 3.75%–4.00%，取上緣；本週無 FOMC 會議"
+    },
+    "us10y": {
+      "value": 4.86,
+      "unit": "%",
+      "changePct": null,
+      "note": "11/6 非農公布後"
+    },
+    "sp500": {
+      "value": 7376.8,
+      "changePct": -2.7,
+      "note": "自行換算：11/5 約 7,354 × 11/6 +0.31%；changePct 為週漲跌"
+    },
+    "nasdaq": {
+      "value": 24580,
+      "changePct": -3.4,
+      "note": "自行換算：11/5 約 24,315 × 11/6 +1.09%；changePct 為週漲跌"
+    },
+    "taiex": {
+      "value": 39701.64,
+      "changePct": -12.19,
+      "note": "週漲跌（10/30 收 45,211.83 → 11/6 收 39,701.64）"
+    },
+    "gold": {
+      "value": 4079,
+      "range": [
+        4077,
+        4081
+      ],
+      "unit": "USD/oz",
+      "changePct": null,
+      "note": "11/6 約 4,077–4,081 美元（單日 -0.8% 至 -0.9%），取區間中點"
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "rank": 1,
+      "date": "2026-11-05",
+      "title": "選後 AI 晶片股崩跌：11/5 那斯達克單日暴跌 5.52%",
+      "what": "11/5（週四）美股重挫，Dow 下跌 1,833 點（-3.44%）、S&P 500 跌 4.36% 至約 7,354、Nasdaq 跌 5.52% 至約 24,315，進入自 10/6 高點回落逾 10% 的修正區。Nvidia 收 181.60 美元（-9.26%）、AMD -17.26%、Broadcom -10.43%；Fox Business 稱費半單日跌逾 12%（僅單一來源）。11/6 小幅反彈（S&P +0.31%、Nasdaq +1.09%），本週累計 S&P -2.7%、Nasdaq -3.4%、Dow -0.9%。",
+      "why": "市場解讀為民主黨在期中選舉大勝，可能強化對資料中心的審查或暫停建設（路透引述 UBS 估計 2028 年約 30% 美國資料中心新增容量面臨風險），加上 AI 資本支出疑慮，使政治風險溢價回吐；各媒體歸因略有不同。",
+      "discrepancy": "Fox 對 Nasdaq 跌幅有 5%、5.2%、5.52% 不同寫法，此處採 5.52%（兩來源一致）；費半跌幅各來源差異大（PTS 寫 3.13%、他處稱逾 12%），無法確認。",
+      "taiwanImpact": {
+        "summary": "台灣 AI／半導體供應鏈權重高，美股晶片股重挫直接衝擊台股與外資動向。",
+        "direction": -1,
+        "channels": [
+          "半導體",
+          "台股",
+          "外資"
+        ]
+      },
+      "primary": "us/semiconductor",
+      "places": [
+        "us/semiconductor",
+        "us/semiconductor/nvidia",
+        "us/semiconductor/amd",
+        "us/tech",
+        "us/equity",
+        "us/government"
+      ],
+      "sentiment": -3,
+      "storylines": [
+        "ai-capex"
+      ],
+      "metrics": [
+        {
+          "label": "Nasdaq",
+          "value": "約 24,315",
+          "change": "-5.52%（11/5）"
+        },
+        {
+          "label": "S&P 500",
+          "value": "約 7,354",
+          "change": "-4.36%（11/5）"
+        },
+        {
+          "label": "Dow",
+          "value": "-1,833 點",
+          "change": "-3.44%（11/5）"
+        },
+        {
+          "label": "Nvidia",
+          "value": "181.60 美元",
+          "change": "-9.26%"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Fox Business 11/5",
+          "url": "https://www.foxbusiness.com/markets/stocks-nov-5-2026"
+        },
+        {
+          "title": "Motley Fool 11/5",
+          "url": "https://www.fool.com/coverage/stock-market-today/2026/11/05/stock-market-today-nov-5-nvidia-slides-on-ai-chip-selloff-as-election-uncertainty-weighs/"
+        },
+        {
+          "title": "Yahoo Finance：資料中心股",
+          "url": "https://finance.yahoo.com/technology/ai/articles/ai-data-center-stocks-slip-112314079.html"
+        },
+        {
+          "title": "AP／Yahoo 11/6 收盤",
+          "url": "https://au.finance.yahoo.com/news/major-us-stock-indexes-fared-212037857.html"
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "rank": 2,
+      "date": "2026-11-06",
+      "title": "台股單週重挫 12.19%，創史上最大盤中跌點，金管會 11/9 起推穩市措施",
+      "what": "加權指數自 10/30 收盤 45,211.83 點，跌至 11/6 收 39,701.64 點（單日 -1,873.08 點、-4.51%），單週累計跌約 5,510 點（-12.19%）；11/6 盤中最低 37,837.05 點，盤中最大跌點 3,737.67 點為史上最大，成交約 1.25 兆元。外資 11/5 賣超 1,024.6 億元、11/6 賣超 911.88 億元（連 7 賣），外資台指期淨空單近 10 萬口；國安基金 11/6 買超 221.41 億元（連 7 買）。新台幣 11/6 盤中一度貶破 33 元，央行外匯局表示供需失衡時會進場調節。金管會宣布自 11/9 起實施 5 項穩定股市措施（內容未能查證）。",
+      "why": "「股匯雙殺」加上融資壓力，使市場波動與信心成為下週焦點；台股總市值週減約 17.9 兆元（自由時報計算）。",
+      "discrepancy": "自由時報稱「史上單週最大跌點」僅單一來源；11/6 跌幅另有稱 4.53%（約 39,690 點）的盤後快訊，與主要來源 4.51% 略有差異；11/6 新台幣收盤價各來源未載。",
+      "taiwanImpact": {
+        "summary": "台股單週重挫 12.19%、外資連 7 賣、新台幣盤中貶破 33 元，股匯雙殺；金管會 11/9 起實施穩市措施。",
+        "direction": -1,
+        "channels": [
+          "台股",
+          "匯率",
+          "外資"
+        ]
+      },
+      "primary": "tw/equity",
+      "places": [
+        "tw/equity",
+        "tw/fx",
+        "tw/central-bank",
+        "tw/government"
+      ],
+      "sentiment": -3,
+      "storylines": [
+        "tw-capital-outflow"
+      ],
+      "metrics": [
+        {
+          "label": "加權指數",
+          "value": "39,701.64",
+          "change": "-12.19%（週）"
+        },
+        {
+          "label": "11/6 單日",
+          "value": "-1,873.08 點",
+          "change": "-4.51%"
+        },
+        {
+          "label": "外資賣超",
+          "value": "1,024.6 億元（11/5）、911.88 億元（11/6）"
+        },
+        {
+          "label": "國安基金買超",
+          "value": "221.41 億元（11/6）"
+        }
+      ],
+      "sources": [
+        {
+          "title": "自由時報",
+          "url": "https://ec.ltn.com.tw/article/breakingnews/5632109"
+        },
+        {
+          "title": "公視新聞",
+          "url": "https://news.pts.org.tw/article/834515"
+        },
+        {
+          "title": "中央社／Yahoo 股市",
+          "url": "https://tw.stock.yahoo.com/news/%E5%8F%B0%E8%82%A1%E6%94%B6%E7%9B%A4%E5%89%B5%E7%AC%AC4%E5%A4%A7%E8%B7%8C%E9%BB%9E-%E5%A4%96%E8%B3%87%E5%8F%B0%E6%8C%87%E6%9C%9F%E6%B7%A8%E7%A9%BA%E5%96%AE%E9%80%BC%E8%BF%9110%E8%90%AC%E5%8F%A3-093902630.html"
+        },
+        {
+          "title": "民生頭條",
+          "url": "https://www.lifetoutiao.news/361890/"
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "rank": 3,
+      "date": "2026-11-06",
+      "title": "美國 10 月非農 +16.5 萬遠超預期，12 月升息機率升高",
+      "what": "11/6 公布的 10 月非農新增 16.5 萬人，失業率 4.1%（前值 4.2%）；市場預期約 5.9 萬至 6.5 萬人（來源不同）。數據後美元走強、殖利率走高：2 年期 4.51%、10 年期 4.86%、30 年期 5.26%；市場對 12 月升息 25 bp 的機率約 78%（單一來源，估算方式不明）。Fed 於 10/28 維持利率不變，Cook 與 Hammack 兩位官員主張升息；本週無 FOMC 會議。",
+      "why": "在股市修正之際，就業數據偏強使「利率較長時間偏高甚至再升息」的預期升溫，不利成長股評價。",
+      "discrepancy": "預期值 CappNotes 約 5.9 萬、路透約 6.5 萬；升息機率 78%（11/6）與 FedWatch 83%（10/28）時點與算法不同，不宜直接比較。",
+      "taiwanImpact": {
+        "summary": "美元與殖利率走強不利新台幣與外資流向，央行貨幣政策空間受外部環境牽動。",
+        "direction": -1,
+        "channels": [
+          "匯率",
+          "外資",
+          "貨幣政策"
+        ]
+      },
+      "primary": "us/central-bank",
+      "places": [
+        "us",
+        "us/central-bank",
+        "us/bonds",
+        "us/fx"
+      ],
+      "sentiment": -1,
+      "storylines": [
+        "fed-hiking-cycle"
+      ],
+      "metrics": [
+        {
+          "label": "10 月非農",
+          "value": "+16.5 萬人"
+        },
+        {
+          "label": "失業率",
+          "value": "4.1%",
+          "change": "前值 4.2%"
+        },
+        {
+          "label": "10 年期殖利率",
+          "value": "4.86%"
+        },
+        {
+          "label": "12 月升息機率",
+          "value": "約 78%"
+        }
+      ],
+      "sources": [
+        {
+          "title": "CappNotes 11/6",
+          "url": "https://cappnotes.substack.com/p/closing-look-friday-november-6-2026"
+        },
+        {
+          "title": "MarketScreener 非農",
+          "url": "https://www.marketscreener.com/news/s-p-500-futures-pare-gains-after-october-non-farm-payrolls-data-ce785fd2d88ffe23"
+        },
+        {
+          "title": "Schwab FOMC",
+          "url": "https://www.schwab.com/learn/story/fomc-meeting"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "rank": 4,
+      "date": "2026-11-06",
+      "title": "美元走強、金價回落、油價在伊朗戰事風險下高檔震盪",
+      "what": "11/6 美元指數約 102.32（+0.76%），歐元約 1.114、美元兌日圓約 158.4；黃金約 4,077–4,081 美元（-0.8% 至 -0.9%，標題指仍為逾兩個月來最佳單週，未能確認週漲幅）；WTI 約 90.4 美元、Brent 約 97.8 美元，市場關注伊朗戰事外交與荷莫茲海峽風險。",
+      "why": "美元與油價同時處於高位，影響通膨預期與央行路徑，與重大總經數據一同牽動風險資產。",
+      "discrepancy": "黃金與油價各來源報價因時點略異；CNBC 標題暗示油價上漲而其他來源描述為下跌，無法證實。",
+      "taiwanImpact": {
+        "summary": "新台幣承壓、進口能源成本偏高。",
+        "direction": -1,
+        "channels": [
+          "匯率",
+          "能源成本"
+        ]
+      },
+      "primary": "us/fx",
+      "places": [
+        "us/fx",
+        "jp/fx",
+        "intl/commodities/gold",
+        "gulf/energy",
+        "gulf/government",
+        "seas/shipping-lane/hormuz"
+      ],
+      "sentiment": -1,
+      "storylines": [
+        "mideast-energy"
+      ],
+      "metrics": [
+        {
+          "label": "美元指數",
+          "value": "約 102.32",
+          "change": "+0.76%"
+        },
+        {
+          "label": "美元兌日圓",
+          "value": "約 158.4"
+        },
+        {
+          "label": "黃金",
+          "value": "約 4,077–4,081 美元",
+          "change": "-0.8% 至 -0.9%"
+        },
+        {
+          "label": "Brent",
+          "value": "約 97.8 美元"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Kitco 黃金",
+          "url": "https://www.kitco.com/news/off-the-wire/2026-11-06/gold-drops-stays-track-best-week-over-two-months"
+        },
+        {
+          "title": "CappNotes 11/6",
+          "url": "https://cappnotes.substack.com/p/closing-look-friday-november-6-2026"
+        },
+        {
+          "title": "AP／Yahoo 11/6 收盤",
+          "url": "https://au.finance.yahoo.com/news/major-us-stock-indexes-fared-212037857.html"
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "rank": 5,
+      "date": "2026-11-06",
+      "title": "財報分歧：軟體與晶片指引疲弱，部分個股逆勢大漲；亞股同步重挫",
+      "what": "11/5 盤後財報在 11/6 反應：Airbnb +11.67%（宣布 120 億美元買回）、Cloudflare +9.91%、IonQ +23.42%；DraftKings -21.30%、Axon -18.18%、Atlassian -16.15%（資料中心展望較弱）、Microchip -10.02%（本季指引弱）。亞洲方面 11/6 日經 -5.96%、Kospi -6.02%。",
+      "why": "顯示市場對 AI 相關支出與指引高度敏感，個股表現分歧擴大。",
+      "discrepancy": "個股與亞股數字主要來自單一整理來源（CappNotes），未交叉驗證。",
+      "taiwanImpact": {
+        "summary": "區域股市同步下跌，台灣半導體與電子供應鏈情緒受牽動。",
+        "direction": -1,
+        "channels": [
+          "半導體",
+          "電子供應鏈"
+        ]
+      },
+      "primary": "us/tech",
+      "places": [
+        "us/tech",
+        "us/semiconductor",
+        "jp/equity",
+        "kr/equity"
+      ],
+      "sentiment": -1,
+      "storylines": [
+        "ai-capex"
+      ],
+      "metrics": [
+        {
+          "label": "日經",
+          "value": "-5.96%（11/6）"
+        },
+        {
+          "label": "Kospi",
+          "value": "-6.02%（11/6）"
+        },
+        {
+          "label": "Atlassian",
+          "value": "-16.15%"
+        },
+        {
+          "label": "Airbnb",
+          "value": "+11.67%"
+        }
+      ],
+      "sources": [
+        {
+          "title": "CappNotes 11/6",
+          "url": "https://cappnotes.substack.com/p/closing-look-friday-november-6-2026"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "e1",
+      "to": "e2",
+      "label": "美股晶片股重挫衝擊台股",
+      "channel": "us-equity-to-tw-equity"
+    },
+    {
+      "from": "e3",
+      "to": "e4",
+      "label": "數據後美元走強",
+      "channel": "fed-to-dollar"
+    }
+  ],
+  "storylines": [],
+  "watchlist": [
+    {
+      "date": "2026-11-09",
+      "text": "台灣金管會 5 項穩定股市措施起實施",
+      "places": [
+        "tw/government"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-09",
+      "text": "中國 10 月 CPI（預期 0.9% y/y）與 PPI（預期 5.4% y/y）",
+      "places": [
+        "cn"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-10",
+      "text": "美國 10 月 CPI（預期整體 +0.3% m/m、核心 +0.2%）；CoreWeave 盤後財報",
+      "places": [
+        "us",
+        "us/tech/coreweave"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-12",
+      "text": "Cisco、Applied Materials 盤後財報；英國 Q3 GDP 初值",
+      "places": [
+        "us/tech",
+        "us/semiconductor",
+        "uk"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-13",
+      "text": "美國 10 月 PPI（預期整體 +0.4%、核心 +0.3%）",
+      "places": [
+        "us"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-17",
+      "text": "Nvidia 預定財報",
+      "places": [
+        "us/semiconductor/nvidia"
+      ],
+      "confirmed": true
+    },
+    {
+      "date": "2026-11-18",
+      "text": "FOMC 會議紀要",
+      "places": [
+        "us/central-bank"
+      ],
+      "confirmed": true
+    }
+  ],
+  "nodeStates": [
+    {
+      "node": "tw.foreign-flow",
+      "level": "low",
+      "direction": -1,
+      "basis": "外資 11/5 賣超 1,024.6 億元、11/6 賣超 911.88 億元（連 7 賣）",
+      "evidence": [
+        "e2"
+      ]
+    },
+    {
+      "node": "kr.equity",
+      "level": "low",
+      "direction": -1,
+      "basis": "Kospi 11/6 下跌 6.02%",
+      "evidence": [
+        "e5"
+      ]
+    },
+    {
+      "node": "gulf.geopolitics",
+      "level": "high",
+      "direction": 0,
+      "basis": "市場關注伊朗戰事外交",
+      "evidence": [
+        "e4"
+      ]
+    },
+    {
+      "node": "seas.hormuz-risk",
+      "level": "high",
+      "direction": 0,
+      "basis": "市場關注荷莫茲海峽風險",
+      "evidence": [
+        "e4"
+      ]
+    }
+  ]
+}
