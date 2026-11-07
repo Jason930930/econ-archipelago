@@ -11,7 +11,7 @@ export interface Effects {
   /** 粒子沿弧線從 from 流到 to（約 2s），弧頂顯示 label；from === to 時改為原地環狀脈衝。 */
   flow(fromPath: string, toPath: string, label: string): Promise<void>;
   /** 粒子沿某條傳導管線流動（約 2s）並讓管線短暫加亮；找不到管線時退回 flow。 */
-  flowAlong(channelId: string, label: string): Promise<void>;
+  flowAlong(channelId: string, label: string, opts?: { quiet?: boolean }): Promise<void>;
   /** 從目前焦點擴散到台灣證交所，顏色依 direction 與配色模式，並顯示摘要。 */
   ripple(direction: -1 | 0 | 1, summary: string): Promise<void>;
   /** 終幕：在對應地標插上旗幟；未確認者加「未確認」。 */
@@ -149,8 +149,8 @@ export function createEffects(ctx: EffectsCtx): Effects {
   }
 
   /** 粒子沿 curve 從起點流到終點（2s），curve 中點上方顯示 text。 */
-  async function particles(curve: THREE.Curve<THREE.Vector3>, text: string): Promise<void> {
-    const n = stage.lowPower ? 12 : 40;
+  async function particles(curve: THREE.Curve<THREE.Vector3>, text: string, quiet = false): Promise<void> {
+    const n = stage.lowPower || quiet ? 12 : 40;
     const geo = new THREE.BufferGeometry();
     const arr = new Float32Array(n * 3);
     geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
@@ -158,12 +158,14 @@ export function createEffects(ctx: EffectsCtx): Effects {
     points.frustumCulled = false;
     root.add(points);
 
-    const tag = label([text], 'fx-flow');
-    tag.position.copy(curve.getPoint(0.5)).add(new THREE.Vector3(0, 0.5, 0));
-    root.add(tag);
+    if (!quiet) {
+      const tag = label([text], 'fx-flow');
+      tag.position.copy(curve.getPoint(0.5)).add(new THREE.Vector3(0, 0.5, 0));
+      root.add(tag);
+    }
 
     const v = new THREE.Vector3();
-    await stage.animate(2000, (k) => {
+    await stage.animate(quiet ? 1600 : 2000, (k) => {
       for (let i = 0; i < n; i++) {
         const u = k * 1.4 - (i / n) * 0.4;
         curve.getPoint(Math.min(1, Math.max(0, u)), v);
@@ -175,15 +177,15 @@ export function createEffects(ctx: EffectsCtx): Effects {
     remove(points);
   }
 
-  async function flowAlong(channelId: string, text: string): Promise<void> {
+  async function flowAlong(channelId: string, text: string, opts: { quiet?: boolean } = {}): Promise<void> {
     const curve = ctx.channelCurve?.(channelId) ?? null;
     if (!curve) {
       const c = getChannel(channelId);
       if (c) await flow(getChannelNode(c.from).path, getChannelNode(c.to).path, text);
       return;
     }
-    ctx.flashChannel?.(channelId, 2600);
-    await particles(curve, text);
+    if (!opts.quiet) ctx.flashChannel?.(channelId, 2600);
+    await particles(curve, text, opts.quiet);
   }
 
   async function ripple(direction: -1 | 0 | 1, summary: string): Promise<void> {

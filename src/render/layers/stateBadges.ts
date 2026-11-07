@@ -11,6 +11,8 @@ export interface StateBadgeLayer {
   rebuild(): void;
   setStates(states: Record<string, NodeState>): void;
   update(): void;
+  /** 情境推演時隱藏全部徽章。 */
+  setHidden(on: boolean): void;
   dispose(): void;
 }
 
@@ -92,12 +94,13 @@ export function createStateBadges(graph: WorldGraph, opts: { zoom(): number; net
 
   let lastZoom = -1;
   let lastNetwork: boolean | null = null;
+  let hidden = false;
   function update(force = false) {
     const zoom = opts.zoom(), network = opts.network();
     if (!force && Math.abs(zoom - lastZoom) < 1e-3 && network === lastNetwork) return;
     lastZoom = zoom;
     lastNetwork = network;
-    for (const h of holders) h.obj.visible = badgeVisible(h.path, zoom, network);
+    for (const h of holders) h.obj.visible = !hidden && badgeVisible(h.path, zoom, network);
   }
 
   return {
@@ -108,6 +111,10 @@ export function createStateBadges(graph: WorldGraph, opts: { zoom(): number; net
       for (const h of holders) for (const [id, b] of h.buttons) paint(id, b);
     },
     update: () => update(),
+    setHidden(on) {
+      hidden = on;
+      update(true);
+    },
     dispose() {
       clear();
       group.removeFromParent();
