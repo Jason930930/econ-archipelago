@@ -34,8 +34,18 @@ export interface NodeState {
   carriedWeeks: number;
 }
 
+/** 與上一週相比的狀態轉變（水準或方向改變）。 */
+export interface Transition {
+  node: string;
+  kind: 'level' | 'direction';
+  from: string;
+  to: string;
+}
+
 export interface StateIndex {
   byWeek: Record<string, Record<string, NodeState>>;
+  /** 每週與前一週（週五對週五）的狀態轉變；第一週為空陣列。 */
+  transitions: Record<string, Transition[]>;
   latest: Record<string, NodeState>;
   latestRef: string | null;
   series: Record<string, Point[]>;
@@ -233,11 +243,13 @@ export function computeState(weeks: WeekData[], fred: FredFile | null): StateInd
       if (src.kind === 'fred' && s) series[n.id] = transformed(src, s).filter(([d]) => d >= from);
     }
   }
-  return { byWeek, latest, latestRef, series };
+  const transitions: StateIndex['transitions'] = {};
+  asc.forEach((w, i) => (transitions[w.weekId] = i === 0 ? [] : stateTransitions(byWeek[asc[i - 1]!.weekId]!, byWeek[w.weekId]!)));
+  return { byWeek, transitions, latest, latestRef, series };
 }
 
 /** 與上一週相比，水準或方向改變的節點（先列水準、再列方向；依節點順序）。 */
-export function stateTransitions(prev: Record<string, NodeState>, cur: Record<string, NodeState>, limit = 5): { node: string; kind: 'level' | 'direction'; from: string; to: string }[] {
+export function stateTransitions(prev: Record<string, NodeState>, cur: Record<string, NodeState>, limit = 5): Transition[] {
   const levels: { node: string; kind: 'level'; from: string; to: string }[] = [];
   const dirs: { node: string; kind: 'direction'; from: string; to: string }[] = [];
   for (const n of CHANNEL_NODES) {
