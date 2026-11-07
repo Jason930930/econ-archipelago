@@ -75,7 +75,7 @@
 
 - **故事播放**：依週報中寫明的因果關係排序（拓撲排序；遇到循環時改依重要性排序），可暫停、切換上一則或下一則，也可以用 2× 播放。
 - **自由探索**：可拖曳、縮放鏡頭。點擊地標會列出本週相關事件，以及相關指標近 12 週的走勢。
-- **跨週時間軸**：切換週次時，世界會從上一週的狀態漸變過去。「主線」（例如 Fed 升息循環、AI 資本支出疑慮）會把不同週的事件串起來。
+- **跨週時間軸**：切換週次時，世界會從上一週的狀態漸變過去。「主線」（例如 Fed 升息循環、AI 資本支出疑慮）會把不同週的事件串起來。時間軸一次顯示 12 週（手機 6 週），可用「‹ 更早」「較新 ›」翻頁，上方有年月標示，只列出視窗內出現過的主線。
 - **誠實呈現資料**：
   - 來源之間數字不一致時會保留「數據出入」，並以虛線框標示。
   - 某週缺少的指標會沿用上週的數值，並標示「沿用上週」，不會自行補造。
@@ -110,6 +110,8 @@
 data/weeks/*.json            每週資料 v2（唯一的資料來源）
 data/world/entities.json     種子實體（公司、組織、商品、航道）
 data/state/fred.json         FRED 快照（每週五樣本＋最新值，每日自動更新）
+public/data/index.json       建置產生的目錄（壓縮 JSON）：週次、主線、實體、指標、最新狀態；開頁只載入這個
+public/data/derived/<週>.json 建置產生的每週衍生資料（節點狀態、管道活躍度、狀態轉變）；切到那週才載入
 schema/week.schema.json      JSON Schema v2
 src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度、節點狀態、情境推演（純邏輯）
 src/data/                    驗證、遷移、指標補值、索引（純邏輯）
@@ -146,3 +148,4 @@ npm run build      # 驗證 → 產生索引 → 建置到 dist/
 - 常駐傳導網絡：`docs/superpowers/specs/2026-11-02-transmission-network-design.md`、`docs/superpowers/plans/2026-11-02-transmission-network.md`
 - 完整狀態鏡像：`docs/superpowers/specs/2026-11-02-state-mirror-design.md`、`docs/superpowers/plans/2026-11-02-state-mirror.md`
 - 情境推演：`docs/superpowers/specs/2026-11-07-what-if-design.md`、`docs/superpowers/plans/2026-11-07-what-if.md`
+- 長期資料成長：`docs/superpowers/specs/2026-11-07-scale-design.md`、`docs/superpowers/plans/2026-11-07-scale.md`

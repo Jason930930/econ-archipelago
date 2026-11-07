@@ -39,8 +39,10 @@ test('shared link opens the scenario directly', async ({ page }) => {
 });
 
 test('invalid shared link falls back with a toast', async ({ page }) => {
-  await ready(page, './?test=1#/2026-10-23/what-if/nope/up');
+  // 提示只顯示 3 秒，且在建立 3D 世界之前出現；負載下建立世界可能超過 3 秒，所以先檢查提示再等世界就緒。
+  await page.goto('./?test=1#/2026-10-23/what-if/nope/up');
   await expect(page.locator('.toast')).toBeVisible();
+  await page.waitForFunction(() => (window as unknown as { __econ?: Hook }).__econ?.ready === true);
   await expect(page.locator('.panel .scenario-result')).toHaveCount(0);
 });
 
