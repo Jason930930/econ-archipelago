@@ -108,3 +108,28 @@ describe('state card', () => {
     ]);
   });
 });
+
+describe('review fixes', () => {
+  test('direction buttons appear right under the chosen row', () => {
+    const p = renderScenarioPicker(states, index);
+    p.querySelector<HTMLButtonElement>('[data-node="tw.twd"]')!.click();
+    const li = p.querySelector('[data-node="tw.twd"]')!.closest('li')!;
+    expect(li.querySelector('[data-direction="up"]')).not.toBeNull();
+    expect(li.querySelector('[data-direction="down"]')).not.toBeNull();
+    p.querySelector<HTMLButtonElement>('[data-node="gulf.oil-price"]')!.click();
+    expect(li.querySelector('[data-direction="up"]')).toBeNull();
+    expect(p.querySelectorAll('[data-direction="up"]')).toHaveLength(1);
+  });
+  test('each why step carries its channel mechanism as a tooltip', () => {
+    const r = renderScenarioResult(oil, index);
+    const step = r.querySelector('.scenario-wave [data-node="us.inflation"] .scenario-why [title]')!;
+    expect(step.getAttribute('title')).toContain('汽油與運輸成本');
+    expect(r.querySelector('.scenario-wave [data-node="us.inflation"] .scenario-why')!.textContent).toBe('為什麼：油價 ↑ → 美國通膨 ↑');
+  });
+  test('text mode section can end the scenario', () => {
+    const t = renderScenarioText(oil, index);
+    const got = captured(t);
+    t.querySelector<HTMLButtonElement>('[data-action="end-scenario"]')!.click();
+    expect(got).toEqual([{ type: 'end-scenario', detail: null }]);
+  });
+});

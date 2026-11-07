@@ -80,3 +80,35 @@ test('text mode lists the scenario', async ({ page }) => {
   await expect(page.locator('.text-mode .text-scenario')).toContainText('情境：油價 ↓');
   await expect(page.locator('.text-mode .text-scenario')).toContainText('數月');
 });
+
+test('without the result panel, the top-bar button brings back 結束推演', async ({ page }) => {
+  await ready(page, './?test=1&fast=1#/2026-10-30/what-if/us.policy-rate/up');
+  await page.locator('.panel .panel-close').click();
+  await page.locator('[data-action=what-if]').click();
+  await page.locator('.panel .scenario-result [data-action="end-scenario"]').click();
+  await expect(page.locator('.forecast-marker')).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/2026-10-30$/);
+});
+
+test('ending a scenario while the next week loads is not undone', async ({ page }) => {
+  await page.route('**/data/weeks/2026-10-16.json', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  });
+  await ready(page, './?test=1&fast=1#/2026-10-30/what-if/gulf.oil-price/up');
+  await page.locator('.week-tick[data-week="2026-10-16"]').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.week-title')).toContainText('2026/10/16', { timeout: 10_000 });
+  await page.waitForTimeout(500);
+  expect(await effectCount(page)).toBe(-1);
+  await expect(page.locator('.panel .scenario-result')).toHaveCount(0);
+});
+
+test('selecting an event ends the scenario', async ({ page }) => {
+  await ready(page, './?test=1&fast=1#/2026-10-30/what-if/gulf.oil-price/up');
+  await page.locator('.panel .panel-close').click();
+  await page.locator('.lane-dot.current').first().click();
+  await expect(page.locator('.panel .event-card')).toBeVisible();
+  expect(await effectCount(page)).toBe(-1);
+  await expect(page.locator('.forecast-marker')).toHaveCount(0);
+});

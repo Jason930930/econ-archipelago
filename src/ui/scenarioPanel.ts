@@ -17,6 +17,17 @@ function button(label: string, attrs: Record<string, string>, type: string, deta
   return b;
 }
 
+/** 「油價 ↑ → 美國通膨 ↑ → Fed 政策利率 ↑」；每一步滑過顯示該管道的機制。 */
+function pathElement(prefix: string, shock: Shock, path: string[]): HTMLElement {
+  const dirs = stepDirections(shock, path);
+  const p = el('p', { class: 'scenario-why' }, prefix, `${getChannelNode(shock.node).name} ${arrow(shock.direction)}`);
+  path.forEach((id, i) => {
+    const c = getChannel(id);
+    p.append(' → ', el('span', { class: 'scenario-step', title: c ? c.mechanism : id }, `${c ? getChannelNode(c.to).name : id} ${arrow(dirs[i]!)}`));
+  });
+  return p;
+}
+
 /** 「油價 ↑ → 美國通膨 ↑ → Fed 政策利率 ↑」 */
 export function pathText(shock: Shock, path: string[]): string {
   const dirs = stepDirections(shock, path);
@@ -38,12 +49,12 @@ const regionName = (id: string) => (isRegionId(id) ? getRegion(id).name : id);
 
 /** 挑選面板：依地區列出 36 個節點；選一個之後出現「若上升／若下降」。 */
 export function renderScenarioPicker(states: Record<string, NodeState>, _index: ArchiveIndex): HTMLElement {
+  // 方向按鈕直接出現在所選的那一列下方，長清單捲到下面時也看得到。
   const actions = el('div', { class: 'scenario-actions' });
   const root = el('section', { class: 'scenario-picker' },
     el('div', { class: 'card-meta' }, '情境推演'),
     el('h3', {}, '選一個節點，給它一個衝擊'),
-    el('p', { class: 'muted' }, '網站會沿著傳導管道推演衝擊擴散到哪些地方、方向與大約多久，並和目前狀態對照。'),
-    actions);
+    el('p', { class: 'muted' }, '網站會沿著傳導管道推演衝擊擴散到哪些地方、方向與大約多久，並和目前狀態對照。'));
   const rows: HTMLButtonElement[] = [];
   for (const g of groupedNodes()) {
     const list = el('ul', { class: 'state-rows' });
@@ -53,9 +64,10 @@ export function renderScenarioPicker(states: Record<string, NodeState>, _index: 
       b.addEventListener('click', () => {
         for (const r of rows) r.setAttribute('aria-pressed', String(r === b));
         actions.replaceChildren(
-          el('strong', {}, n.name),
           button('推演：若上升 ↑', { class: 'btn', 'data-direction': 'up' }, 'start-scenario', { node: n.id, direction: 1 }),
           button('推演：若下降 ↓', { class: 'btn', 'data-direction': 'down' }, 'start-scenario', { node: n.id, direction: -1 }));
+        b.closest('li')?.append(actions);
+        actions.querySelector<HTMLButtonElement>('button')?.focus();
       });
       rows.push(b);
       list.append(el('li', {}, b));
@@ -79,9 +91,9 @@ function effectRow(shock: Shock, e: Effect): HTMLElement {
   const notes = [VS_TEXT[e.vsCurrent], e.extreme === 'high' ? '已在 5 年高檔' : e.extreme === 'low' ? '已在 5 年低檔' : ''].filter(Boolean);
   if (notes.length) li.append(el('p', { class: 'muted scenario-vs' }, notes.join('・')));
   if (e.counterPath) {
-    li.append(el('p', { class: 'scenario-why' }, `一條路徑：${pathText(shock, e.path)}`), el('p', { class: 'scenario-why' }, `另一條路徑：${pathText(shock, e.counterPath)}`));
+    li.append(pathElement('一條路徑：', shock, e.path), pathElement('另一條路徑：', shock, e.counterPath));
   } else {
-    li.append(el('p', { class: 'scenario-why' }, `為什麼：${pathText(shock, e.path)}`));
+    li.append(pathElement('為什麼：', shock, e.path));
   }
   return li;
 }
@@ -115,7 +127,8 @@ export function renderScenarioResult(r: ScenarioResult, _index: ArchiveIndex): H
 /** 文字模式版本：沒有按鈕與動畫。 */
 export function renderScenarioText(r: ScenarioResult, _index: ArchiveIndex): HTMLElement {
   const name = getChannelNode(r.shock.node).name;
-  const root = el('section', { class: 'text-scenario' }, el('h3', { class: 'section-title' }, `情境：${name} ${arrow(r.shock.direction)}`));
+  const root = el('section', { class: 'text-scenario' }, el('h3', { class: 'section-title' }, `情境：${name} ${arrow(r.shock.direction)}`),
+    button('結束推演', { class: 'btn', 'data-action': 'end-scenario' }, 'end-scenario', null));
   const line = (e: Effect) => {
     const n = getChannelNode(e.node).name;
     const dir = e.direction === null ? '方向分歧 ⇅' : arrow(e.direction);

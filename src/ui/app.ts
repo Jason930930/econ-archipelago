@@ -501,8 +501,6 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   // ---------- 切週 ----------
   async function goWeek(weekId: string, eventId: string | null, invalid = false, withScenario?: Shock | null) {
-    // 切週時保留情境（依新週狀態重算）；前往某則事件或網址指定時則依參數。
-    const keep = withScenario !== undefined ? withScenario : eventId ? null : scenario;
     const nav = ++navSeq;
     runToken++;
     if (player.playing) dispatch({ type: 'pause' });
@@ -515,6 +513,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
     // 只採用最後一次導覽的結果，較慢回來的舊請求直接丟棄。
     if (nav !== navSeq) return;
+    // 載入完成後才決定是否保留情境：載入期間使用者可能已經結束或換了情境。
+    const keep = withScenario !== undefined ? withScenario : eventId ? null : scenario;
     const first = !week;
     const changed = first || next.weekId !== week.weekId;
     runToken++;
@@ -590,6 +590,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
   });
 
   whatIfBtn.addEventListener('click', () => {
+    // 推演進行中：重新顯示結果（含「結束推演」），結果面板被關掉或換掉後也能用滑鼠或觸控結束。
+    if (scenario && scenarioResult) {
+      if (textMode) {
+        renderText(null);
+        window.scrollTo(0, 0);
+      } else showPanel(renderScenarioResult(scenarioResult, index));
+      return;
+    }
     const picker = renderScenarioPicker(statesFor(week.weekId, index), index);
     if (textMode) {
       textRoot.prepend(picker);
