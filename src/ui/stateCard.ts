@@ -95,6 +95,13 @@ function sourceLine(nodeId: string, s: NodeState, weekId: string | undefined): H
   return line;
 }
 
+/** 狀態卡上的「推演：若上升／若下降」。 */
+function scenarioButtons(nodeId: string): HTMLElement {
+  return el('div', { class: 'state-scenario' },
+    button('推演：若上升', { class: 'state-evidence', 'data-scenario': 'up' }, 'start-scenario', { node: nodeId, direction: 1 }),
+    button('推演：若下降', { class: 'state-evidence', 'data-scenario': 'down' }, 'start-scenario', { node: nodeId, direction: -1 }));
+}
+
 export function renderStateCard(nodeId: string, s: NodeState, index: ArchiveIndex, opts: { weekId?: string } = {}): HTMLElement {
   const node = getChannelNode(nodeId);
   const src = sourceOf(nodeId);
@@ -104,6 +111,7 @@ export function renderStateCard(nodeId: string, s: NodeState, index: ArchiveInde
     card.append(el('p', { class: 'muted' }, '尚無資料'));
     if (src.kind !== 'report-qualitative') card.append(sourceLine(nodeId, s, opts.weekId));
     else card.append(el('p', { class: 'muted' }, '週報明確提到這個節點時，排程才會填寫狀態。'));
+    card.append(scenarioButtons(nodeId));
     return card;
   }
   if (s.kind === 'numeric' && s.value !== null) {
@@ -125,7 +133,7 @@ export function renderStateCard(nodeId: string, s: NodeState, index: ArchiveInde
   if (sp) card.append(sp);
   if (s.basis) card.append(el('p', { class: 'state-basis' }, s.basis));
   card.append(el('p', { class: 'muted state-freshness' }, freshnessText(s)), sourceLine(nodeId, s, opts.weekId));
-  card.append(el('p', { class: 'channel-note' }, STATE_NOTE));
+  card.append(scenarioButtons(nodeId), el('p', { class: 'channel-note' }, STATE_NOTE));
   return card;
 }
 

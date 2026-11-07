@@ -12,6 +12,9 @@ import { createGauge, type Gauge, type GaugeHost } from './gauges';
 import { buildShipping } from './layers/shipping';
 import { createChannelLayer } from './layers/channels';
 import { createStateBadges } from './layers/stateBadges';
+import { createScenarioLayer } from './layers/scenario';
+import { scenarioWaves } from './scenarioWaves';
+import { WAVE_TEXT, type ScenarioResult } from '../world/scenario';
 import type { NodeState } from '../world/state';
 import { createPickRaycaster } from './pick';
 import type { ChannelActivity, ProposalSummary } from '../world/activation';
@@ -64,6 +67,8 @@ export interface WorldView {
   channelScreenPoint(id: string, t?: number): { x: number; y: number } | null;
   /** 節點狀態徽章（子專案 3）。 */
   setNodeStates(states: Record<string, NodeState>): void;
+  /** 情境推演：聚焦管線、衝擊標記、依數日 → 數週 → 數月三波播放並插上預估標記；null 清除。 */
+  showScenario(result: ScenarioResult | null): Promise<void>;
   onHover(cb: (path: string | null, screen: { x: number; y: number }) => void): void;
   readonly graph: WorldGraph;
   readonly effects: Effects;
@@ -283,8 +288,14 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
     applyFade();
   }
 
+  // 情境推演圖層（子專案 4）。
+  const scenario = createScenarioLayer(graph, overlay);
+  root.add(scenario.group);
+  let scenarioToken = 0;
+
   stage.onFrame((dt, t) => {
     applyLod();
+    scenario.update(t);
     channels.update(dt, t);
     badges.update();
     for (const n of graph.all()) n.update(dt, t);
@@ -450,6 +461,24 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       applyFade();
     },
     setNodeStates: (s) => badges.setStates(s),
+    async showScenario(result) {
+      const token = ++scenarioToken;
+      scenario.clear();
+      channels.setFocus(null);
+      badges.setHidden(false);
+      if (!result) return;
+      badges.setHidden(true);
+      channels.setFocus(new Set(result.effects.flatMap((e) => [...e.path, ...(e.counterPath ?? [])])));
+      scenario.setShock(result.shock);
+      for (const w of scenarioWaves(result)) {
+        if (token !== scenarioToken) return;
+        scenario.banner(`${WAVE_TEXT[w.wave]}後`);
+        await Promise.all(w.channels.map((id) => effects.flowAlong(id, '', { quiet: true })));
+        if (token !== scenarioToken) return;
+        scenario.addMarkers(result.effects.filter((e) => e.wave === w.wave));
+      }
+      if (token === scenarioToken) scenario.banner(null);
+    },
     setNetworkMode(on) {
       networkMode = on;
       channels.setNetwork(on);
@@ -473,6 +502,7 @@ export function createWorld(canvas: HTMLCanvasElement, seaPoints: [number, numbe
       for (const n of graph.all()) disposeObject(n.object);
       channels.dispose();
       badges.dispose();
+      scenario.dispose();
       legend.remove();
       stage.dispose();
     },

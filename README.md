@@ -51,6 +51,20 @@
 
 ![世界狀態總覽與狀態徽章](docs/images/state.png)
 
+### 情境推演（what-if）
+
+選一個節點、給它一個衝擊（例如「Fed 政策利率 ↑」「油價 ↑」），網站沿著傳導網絡推演衝擊會擴散到哪裡：
+
+- 列舉從衝擊節點出發、最多 4 跳且不重複經過節點的路徑；路徑方向 = 每條管道方向相乘，權重 = 各管道強度 ÷ 3 相乘、每多一跳再乘 0.7。
+- 每個受影響的節點顯示方向（相反方向的路徑也夠強時標「方向分歧」）、強弱（強／中／弱）、大約多久（主要路徑上最慢的時間落差：數日／數週／數月），以及「為什麼」的主要路徑，例如「Fed 政策利率 ↑ → 美元強弱 ↑ → 新台幣強弱 ↓」。
+- 和該週的節點狀態對照：與目前趨勢一致（加劇）或相反（可能反轉），已在 5 年高檔或低檔也會註明。
+- 3D 世界依數日 → 數週 → 數月三波播放：無關的管線淡出、光點沿管線流動、節點插上「預估」標記；結果面板把「對台灣」放在最前面。
+- 從頂欄「情境推演」或任何狀態卡的「推演：若上升／若下降」開始；Esc 或「結束推演」離開。每個情境都有分享網址，例如 `#/2026-10-30/what-if/us.policy-rate/up`；文字模式也能用。
+
+> 依教科書層級的定性傳導關係推演，不是預測。
+
+![情境推演：Fed 政策利率上升](docs/images/what-if.png)
+
 > 僅為資訊整理，不構成任何買賣或個人化投資建議。
 
 ## 功能
@@ -97,14 +111,14 @@ data/weeks/*.json            每週資料 v2（唯一的資料來源）
 data/world/entities.json     種子實體（公司、組織、商品、航道）
 data/state/fred.json         FRED 快照（每週五樣本＋最新值，每日自動更新）
 schema/week.schema.json      JSON Schema v2
-src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度、節點狀態（純邏輯）
+src/world/                   地區、部門、路徑、投影、GDP 版面、實體清單、指標綁定、傳導管道與熱度、節點狀態、情境推演（純邏輯）
 src/data/                    驗證、遷移、指標補值、索引（純邏輯）
 src/story/                   因果排序、播放狀態機（純邏輯）
 src/render/graph.ts          WorldGraph：以路徑索引的節點樹（地區 → 部門 → 實體）
-src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L4 傳導管線、狀態徽章、L5 標籤、航線
+src/render/layers/           L0 地形、L1 區塊、L2 實體節點、L4 傳導管線、狀態徽章、推演標記、L5 標籤、航線
 src/render/landmarks/        18 種部門原型建築
 src/render/gauges/           8 種指標儀表（火焰、光柱、樓層、燈帶、光暈、閃爍、旗幟、熱霧）
-src/ui/                      節點面板（麵包屑）、狀態卡與世界狀態、管道面板、事件卡、時間軸、控制列、文字模式、路由
+src/ui/                      節點面板（麵包屑）、狀態卡與世界狀態、情境推演面板、管道面板、事件卡、時間軸、控制列、文字模式、路由
 scripts/fetch-fred.ts        每日 FRED 抓取（單一序列失敗沿用舊值，全部失敗不寫檔）
 ```
 
@@ -131,3 +145,4 @@ npm run build      # 驗證 → 產生索引 → 建置到 dist/
 - 世界骨架 v2：`docs/superpowers/specs/2026-11-02-world-skeleton-v2-design.md`
 - 常駐傳導網絡：`docs/superpowers/specs/2026-11-02-transmission-network-design.md`、`docs/superpowers/plans/2026-11-02-transmission-network.md`
 - 完整狀態鏡像：`docs/superpowers/specs/2026-11-02-state-mirror-design.md`、`docs/superpowers/plans/2026-11-02-state-mirror.md`
+- 情境推演：`docs/superpowers/specs/2026-11-07-what-if-design.md`、`docs/superpowers/plans/2026-11-07-what-if.md`

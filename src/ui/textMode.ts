@@ -17,10 +17,12 @@ export function renderWatchlist(items: WatchItem[]): HTMLElement {
   ));
 }
 
-export function renderTextMode(week: WeekData, order: string[], entities: EntityRecord[], states?: Record<string, NodeState>): HTMLElement {
+export function renderTextMode(week: WeekData, order: string[], entities: EntityRecord[], states?: Record<string, NodeState>, scenario?: HTMLElement | null): HTMLElement {
   const byId = new Map(week.events.map((e) => [e.id, e]));
   const ordered = order.map((id) => byId.get(id)).filter((e) => e !== undefined);
   const root = el('section', { class: 'text-mode' }, el('h2', {}, week.title));
+  // 情境推演的結果放在文字頁面最上方。
+  if (scenario) root.append(scenario);
   ordered.forEach((ev, i) => root.append(renderEventCard(ev, { index: i, total: ordered.length }, entities)));
   if (week.links.length > 0) {
     root.append(el('h3', { class: 'section-title' }, '因果連線'), el('ul', { class: 'links' }, ...week.links.map((l) =>
