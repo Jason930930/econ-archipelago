@@ -134,6 +134,10 @@ export function getChannelNode(id: string): ChannelNode {
   return n;
 }
 
+export function isChannelNodeId(id: string): boolean {
+  return NODE_BY_ID.has(id);
+}
+
 export function getChannel(id: string): Channel | undefined {
   return CHANNEL_BY_ID.get(id);
 }
